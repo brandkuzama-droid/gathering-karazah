@@ -96,6 +96,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     <div class="top">
       <h1>طلبات الجاذرينج</h1>
       <div class="live"><span class="dot" id="dot"></span><span id="liveTxt">متصل</span>
+        <button class="ghost" id="notif" type="button" hidden>🖥️ تفعيل إشعارات الجهاز</button>
         <button class="ghost" id="sound" type="button">🔔 الصوت شغال</button>
         <button class="ghost" id="logout" type="button">خروج</button>
       </div>
@@ -148,8 +149,39 @@ function beep(){
 }
 
 // التنبيه يتكرر كل ٣ ثواني لين ما يبقى أي طلب جديد (قبول أو رفض)
+// إشعار الجهاز: يطلع حتى لو الكاشير في تبويب أو برنامج ثاني
+const canNotify = "Notification" in window;
+function updateNotifBtn(){
+  const b = $("notif");
+  if (!canNotify || Notification.permission === "denied") { b.hidden = !canNotify ? true : false; b.textContent = "🖥️ الإشعارات محظورة من المتصفح"; b.disabled = true; if (!canNotify) b.hidden = true; return; }
+  b.hidden = Notification.permission === "granted";
+}
+async function askNotify(){
+  if (!canNotify || Notification.permission !== "default") return;
+  try { await Notification.requestPermission(); } catch {}
+  updateNotifBtn();
+}
+function sysNotify(o){
+  if (!canNotify || Notification.permission !== "granted") return;
+  try {
+    const n = new Notification("طلب جاذرينج جديد #" + o.id, {
+      body: `${o.sufra}\n${o.name} · ${prettyDate(o.date)}\n${o.total || ""}`,
+      tag: "order-" + o.id, requireInteraction: true
+    });
+    n.onclick = () => { window.focus(); tab = "new"; render(); n.close(); };
+  } catch {}
+}
+
+// عنوان التبويب يومض لين يرد الكاشير
+let blink = null;
+function syncBlink(pending){
+  if (pending && !blink) { let on = false; blink = setInterval(() => { on = !on; document.title = on ? "🔴 طلب جديد!" : `(${pending}) شاشة الكاشير`; }, 1000); }
+  if (!pending && blink) { clearInterval(blink); blink = null; document.title = "شاشة الكاشير | الجاذرينج"; }
+}
+
 function syncAlarm(){
   const pending = orders.some(o => o.status === "جديد");
+  syncBlink(orders.filter(o => o.status === "جديد").length);
   if (pending && soundOn) { if (!alarm) { beep(); alarm = setInterval(beep, 3000); } }
   else { clearInterval(alarm); alarm = null; }
 }
@@ -169,11 +201,9 @@ async function refresh(){
     const fresh = seen ? list.filter(o => !seen.has(o.id) && o.status === "جديد") : [];
     seen = ids; orders = list;
     $("dot").classList.remove("off"); $("liveTxt").textContent = "متصل · آخر تحديث " + new Date().toLocaleTimeString("ar-SA", { hour:"numeric", minute:"2-digit" });
-    if (fresh.length) { toast(fresh.length === 1 ? "طلب جديد #" + fresh[0].id : fresh.length + " طلبات جديدة"); }
+    if (fresh.length) { fresh.forEach(sysNotify); toast(fresh.length === 1 ? "طلب جديد #" + fresh[0].id : fresh.length + " طلبات جديدة"); }
     render(new Set(fresh.map(o => o.id)));
     syncAlarm();
-    const n = orders.filter(o => o.status === "جديد").length;
-    document.title = (n ? `(${n}) ` : "") + "شاشة الكاشير | الجاذرينج";
   } catch (e) {
     if (e.message === "key") { logout(); $("loginErr").textContent = "كلمة السر غلط."; $("loginErr").hidden = false; return; }
     $("dot").classList.add("off"); $("liveTxt").textContent = "غير متصل، بنحاول مرة ثانية";
@@ -271,12 +301,13 @@ async function setStatus(o, status, b){
 }
 
 function start(){
+  updateNotifBtn();
   $("login").hidden = true; $("board").hidden = false;
   $("sound").textContent = soundOn ? "🔔 الصوت شغال" : "🔕 الصوت مطفي";
   refresh(); clearInterval(timer); timer = setInterval(refresh, REFRESH_SECONDS * 1000);
 }
 function logout(){
-  clearInterval(timer); clearInterval(alarm); alarm = null; key = ""; seen = null; orders = [];
+  clearInterval(timer); clearInterval(alarm); alarm = null; syncBlink(0); key = ""; seen = null; orders = [];
   try { localStorage.removeItem("cashierKey"); } catch {}
   $("board").hidden = true; $("login").hidden = false;
 }
@@ -287,12 +318,14 @@ $("login").addEventListener("submit", async e => {
   if (!SHEET_URL) { err.textContent = "ما انحط رابط Apps Script في الملف للحين."; err.hidden = false; return; }
   key = $("key").value.trim(); if (!key) return;
   try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch {}  // يفتح الصوت بعد ضغطة المستخدم
+  askNotify();
   $("loginBtn").disabled = true;
   try { await load(); try { localStorage.setItem("cashierKey", key); } catch {} start(); }
   catch (x) { err.textContent = x.message === "key" ? "كلمة السر غلط." : "ما قدرنا نتصل، تأكد من الإنترنت."; err.hidden = false; }
   finally { $("loginBtn").disabled = false; }
 });
 $("logout").onclick = logout;
+$("notif").onclick = askNotify;
 $("sound").onclick = () => {
   soundOn = !soundOn; try { localStorage.setItem("cashierSound", soundOn ? "on" : "off"); } catch {}
   $("sound").textContent = soundOn ? "🔔 الصوت شغال" : "🔕 الصوت مطفي";
