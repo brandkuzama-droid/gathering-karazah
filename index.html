@@ -67,7 +67,14 @@ h2{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0}
 
 /* النموذج */
 form{display:flex;flex-direction:column;gap:14px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.seg legend{font-weight:500;padding:0;margin-bottom:6px}
+.seg-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg-opts label{flex-direction:row;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;background:var(--surface)}
+.seg-opts label:has(input:checked){border-color:var(--accent);background:var(--soft);color:var(--accent);font-weight:700}
+.seg-opts input{accent-color:var(--accent);margin:0}
+#date{text-align:start}
+[dir="rtl"] #date{text-align:right}
 label{display:flex;flex-direction:column;gap:6px;font-weight:500;min-width:0}
 input,textarea{font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);width:100%}
 .summary{background:var(--soft);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
@@ -91,7 +98,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .done .num{font-family:var(--display);font-weight:800;font-size:2.4rem;color:var(--accent);font-variant-numeric:tabular-nums}
 
 @media (max-width:560px){.dishes{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:420px){.sufras{grid-template-columns:1fr}.two{grid-template-columns:1fr}}
+@media (max-width:420px){.sufras{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -129,11 +136,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <div class="summary" id="summary"></div>
       <label for="name"><span data-t="name"></span><input id="name" required autocomplete="name"></label>
       <label for="phone"><span data-t="phone"></span><input id="phone" required inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" dir="ltr"></label>
-      <div class="two">
-        <label for="date"><span data-t="date"></span><input id="date" type="date" required></label>
-        <label for="time"><span data-t="time"></span><input id="time" type="time" required></label>
-      </div>
-      <label for="address"><span data-t="address"></span><input id="address" required></label>
+      <fieldset class="seg">
+        <legend data-t="contact"></legend>
+        <div class="seg-opts">
+          <label for="c1"><input type="radio" name="contact" id="c1" value="call" checked><span data-t="call"></span></label>
+          <label for="c2"><input type="radio" name="contact" id="c2" value="wa"><span data-t="wa"></span></label>
+        </div>
+      </fieldset>
+      <label for="date"><span data-t="date"></span><input id="date" type="date" required dir="ltr"></label>
       <label for="notes"><span data-t="notes"></span><textarea id="notes" rows="2"></textarea></label>
       <p class="err" id="err" hidden></p>
       <button class="btn" id="submit" type="submit" data-t="send"></button>
@@ -264,13 +274,13 @@ const T = {
     chooseSufra: "اختر سفرة", toItems: "اختيار الأصناف", next: "التالي",
     chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
     changeSufra: "→ تغيير السفرة", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
-    name: "الاسم", phone: "رقم الجوال", date: "تاريخ الجاذرينج", time: "وقت التوصيل",
+    name: "الاسم", phone: "رقم الجوال", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
     sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => `خصم ${n}٪`, total: "الإجمالي بعد الخصم",
-    orderNo: "رقم طلبك", thanks: "وصلنا طلبك، شكراً لك", willCall: "بنتواصل معك على الجوال لتأكيد الطلب.", newOrder: "طلب جديد",
+    orderNo: "رقم طلبك", thanks: "وصلنا طلبك، شكراً لك", willCall: "بنتواصل معك لتأكيد الطلب.", newOrder: "طلب جديد",
     eNamePhone: "اكتب الاسم ورقم الجوال.", ePhone: "رقم الجوال غير صحيح، اكتبه مثل 05xxxxxxxx.",
-    eDate: "حدد تاريخ ووقت الجاذرينج.", eSoon: n => `التاريخ لازم يكون بعد ${n} يوم على الأقل من اليوم.`,
+    eDate: "حدد تاريخ الجاذرينج.", eSoon: n => `التاريخ لازم يكون بعد ${n} يوم على الأقل من اليوم.`,
     eAddr: "اكتب العنوان أو رابط الموقع.", eSend: "ما قدرنا نرسل الطلب. تأكد من الإنترنت وجرّب مرة ثانية."
   },
   en: {
@@ -282,13 +292,13 @@ const T = {
     chooseSufra: "Choose a platter", toItems: "Choose items", next: "Next",
     chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
     changeSufra: "← Change platter", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
-    name: "Name", phone: "Mobile number", date: "Gathering date", time: "Delivery time",
+    name: "Name", phone: "Mobile number", date: "Gathering date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
     address: "Address or location link", addressPh: "District, street, or Google Maps link",
     notes: "Notes (optional)", send: "Send order", sending: "Sending...",
     sufra: "Platter", price: "Price", before: "Price before discount", off: n => `${n}% off`, total: "Total after discount",
     orderNo: "Your order number", thanks: "We got your order, thank you", willCall: "We'll call you to confirm.", newOrder: "New order",
     eNamePhone: "Enter your name and mobile number.", ePhone: "Invalid mobile number. Use a format like 05xxxxxxxx.",
-    eDate: "Choose the gathering date and time.", eSoon: n => `The date must be at least ${n} day(s) from today.`,
+    eDate: "Choose the gathering date.", eSoon: n => `The date must be at least ${n} day(s) from today.`,
     eAddr: "Enter your address or location link.", eSend: "We couldn't send your order. Check your connection and try again."
   },
   ur: {
@@ -300,13 +310,13 @@ const T = {
     chooseSufra: "دسترخوان منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
     chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
     changeSufra: "→ دسترخوان تبدیل کریں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
-    name: "نام", phone: "موبائل نمبر", date: "تقریب کی تاریخ", time: "ڈیلیوری کا وقت",
+    name: "نام", phone: "موبائل نمبر", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
     sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => `${n}٪ رعایت`, total: "رعایت کے بعد کل",
     orderNo: "آپ کا آرڈر نمبر", thanks: "آپ کا آرڈر موصول ہو گیا، شکریہ", willCall: "تصدیق کے لیے ہم آپ سے رابطہ کریں گے۔", newOrder: "نیا آرڈر",
     eNamePhone: "اپنا نام اور موبائل نمبر لکھیں۔", ePhone: "موبائل نمبر درست نہیں۔ 05xxxxxxxx کی طرح لکھیں۔",
-    eDate: "تقریب کی تاریخ اور وقت منتخب کریں۔", eSoon: n => `تاریخ آج سے کم از کم ${n} دن بعد ہونی چاہیے۔`,
+    eDate: "تقریب کی تاریخ منتخب کریں۔", eSoon: n => `تاریخ آج سے کم از کم ${n} دن بعد ہونی چاہیے۔`,
     eAddr: "اپنا پتہ یا لوکیشن لنک لکھیں۔", eSend: "آرڈر نہیں بھیجا جا سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔"
   }
 };
@@ -338,7 +348,6 @@ function applyLang(){
   $("brand").textContent = CONFIG.brand[lang];
   document.querySelectorAll("#langs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === lang));
   document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
-  $("address").placeholder = t("addressPh");
   renderSufras();
   if (step === 2) renderCats();
   if (step === 3) renderSummary();
@@ -486,9 +495,8 @@ $("form").addEventListener("submit", async e => {
   const fail = m => { err.textContent = m; err.hidden = false; };
   if (!v("name") || !v("phone")) return fail(t("eNamePhone"));
   if (!/^[0-9+\s]{9,15}$/.test(v("phone"))) return fail(t("ePhone"));
-  if (!v("date") || !v("time")) return fail(t("eDate"));
+  if (!v("date")) return fail(t("eDate"));
   if (v("date") < $("date").min) return fail(t("eSoon")(CONFIG.minDaysAhead));
-  if (!v("address")) return fail(t("eAddr"));
 
   // الإيميل يوصلك بالعربي دائماً
   const s = CONFIG.sufras[sufra];
@@ -508,8 +516,8 @@ $("form").addEventListener("submit", async e => {
   }
   Object.assign(payload, {
     "الاسم": v("name"), "الجوال": v("phone"),
-    "التاريخ": v("date"), "الوقت": v("time"),
-    "العنوان": v("address"), "ملاحظات": v("notes") || "-",
+    "طريقة التواصل": document.querySelector('input[name="contact"]:checked').value === "wa" ? "واتساب" : "اتصال",
+    "التاريخ": v("date"), "ملاحظات": v("notes") || "-",
     "لغة العميل": { ar: "عربي", en: "English", ur: "أوردو" }[lang]
   });
 
