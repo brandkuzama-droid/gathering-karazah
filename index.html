@@ -16,6 +16,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:720px;margin:0 auto;padding-block:20px 140px}
@@ -453,7 +454,7 @@ $("form").addEventListener("submit", async e => {
 
   // الإيميل يوصلك بالعربي دائماً
   const s = CONFIG.sufras[sufra];
-  const orderNo = String(Date.now()).slice(-5);
+  const orderNo = String(Math.floor(100000 + Math.random() * 900000));
   const payload = {
     _subject: `طلب سفرة جديد #${orderNo} - ${s.name.ar} - ${v("name")}`,
     _template: "table", _captcha: "false",
