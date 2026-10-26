@@ -6,9 +6,9 @@
 // كلمة سر شاشة الكاشير — غيّرها لكلمة خاصة فيك، ونفسها تكتبها في شاشة الكاشير
 const SECRET = "CHANGE-ME-1234";
 
-// تنبيه تيليجرام: يوصل للجوال حتى لو شاشة الكاشير مسكرة (اتركه فاضي لو ما تبيه)
-const TELEGRAM_TOKEN = "";   // من BotFather
-const TELEGRAM_CHAT_ID = ""; // رقم المحادثة أو القروب
+// إيميل تنبيه لكل طلب جديد: يوصل إشعار للجوال حتى لو شاشة الكاشير مسكرة
+// تقدر تحط أكثر من إيميل بينها فاصلة، مثل: "a@gmail.com, b@gmail.com" (فاضي = بدون إيميل)
+const NOTIFY_EMAILS = "";
 
 const SHEET_NAME = "الطلبات";
 const HEADERS = ["رقم الطلب", "وقت الطلب", "الحالة", "السفرة", "الأصناف", "الإجمالي",
@@ -66,27 +66,32 @@ function doPost(e) {
       clean_(o.name, 120), "'" + String(o.phone).replace(/[^0-9+\s]/g, "").slice(0, 20), clean_(o.contact, 20),
       clean_(o.date, 20), clean_(o.notes, 1000), clean_(o.lang, 20)
     ]);
-    try { telegram_(o); } catch (x) {}   // فشل التنبيه ما يوقف حفظ الطلب
+    try { notify_(o); } catch (x) {}   // فشل التنبيه ما يوقف حفظ الطلب
     return json_({ ok: true });
   } finally {
     lock.releaseLock();
   }
 }
 
-function telegram_(o) {
-  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
-  const text = [
-    "🔔 طلب جاذرينج جديد #" + o.id,
-    "📅 " + o.date,
-    "🍽️ " + o.sufra,
-    String(o.items || ""),
-    "💰 " + o.total,
-    "👤 " + o.name + " · " + o.phone + " (" + o.contact + ")",
-    o.notes ? "📝 " + o.notes : ""
-  ].filter(Boolean).join("\n");
-  UrlFetchApp.fetch("https://api.telegram.org/bot" + TELEGRAM_TOKEN + "/sendMessage", {
-    method: "post", contentType: "application/json", muteHttpExceptions: true,
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text.slice(0, 4000) })
+function notify_(o) {
+  if (!NOTIFY_EMAILS) return;
+  const rows = [
+    ["رقم الطلب", "#" + o.id], ["تاريخ الجاذرينج", o.date], ["السفرة", o.sufra],
+    ["الأصناف", String(o.items || "").replace(/\n/g, "<br>")], ["الإجمالي", o.total],
+    ["الاسم", o.name], ["الجوال", o.phone], ["طريقة التواصل", o.contact],
+    ["ملاحظات", o.notes || "-"], ["لغة العميل", o.lang || "-"]
+  ];
+  const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const html = '<div dir="rtl" style="font-family:Tahoma,Arial;font-size:15px">' +
+    '<h2 style="color:#801919;margin:0 0 12px">طلب جاذرينج جديد #' + esc(o.id) + '</h2>' +
+    '<table cellpadding="8" style="border-collapse:collapse">' +
+    rows.map(r => '<tr><td style="color:#7A6666;border-bottom:1px solid #eee;white-space:nowrap">' + r[0] +
+      '</td><td style="border-bottom:1px solid #eee">' + (r[0] === "الأصناف" ? esc(r[1]).replace(/&lt;br&gt;/g, "<br>") : esc(r[1])) + '</td></tr>').join("") +
+    '</table></div>';
+  MailApp.sendEmail({
+    to: NOTIFY_EMAILS,
+    subject: "🔔 طلب جاذرينج جديد #" + o.id + " - " + o.name,
+    htmlBody: html, name: "طلبات الجاذرينج"
   });
 }
 
