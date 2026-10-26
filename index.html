@@ -172,7 +172,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
    عدّل هنا فقط  (كل اسم له: عربي ar، إنجليزي en، أوردو ur)
    ========================================================= */
 const CONFIG = {
-  email: "your@email.com",      // الإيميل اللي يوصله الطلب
+  email: "your@email.com",      // الإيميل اللي يوصله الطلب (اتركه your@email.com لو ما تبي إيميل)
+  sheetUrl: "",                 // رابط Apps Script (Web app) عشان توصل الطلبات لشاشة الكاشير
   brand: { ar: "سفرة الجاذرينج", en: "Gathering Platters", ur: "گیدرنگ دسترخوان" },
   defaultLang: "ar",            // اللغة الافتراضية: ar أو en أو ur
   requireFull: true,            // true = لازم يكمل العدد المسموح من كل فئة
@@ -521,15 +522,42 @@ $("form").addEventListener("submit", async e => {
     "لغة العميل": { ar: "عربي", en: "English", ur: "أوردو" }[lang]
   });
 
-  const btn = $("submit"); btn.disabled = true; btn.textContent = t("sending");
-  try {
+  // نفس الطلب لشاشة الكاشير (Google Sheet)
+  const tt = s.price != null ? totals() : null;
+  const order = {
+    id: orderNo,
+    sufra: `${s.name.ar} (تكفي ${s.min} - ${s.max} أشخاص)`,
+    items: chosen("ar").map(x => `${x.cat}: ${x.list.join("، ")}`).join("\n"),
+    total: tt ? `${tt.after} ريال` + (CONFIG.discount ? ` (قبل الخصم ${tt.before})` : "") : "-",
+    name: v("name"), phone: v("phone"),
+    contact: payload["طريقة التواصل"], date: v("date"),
+    notes: v("notes"), lang: payload["لغة العميل"]
+  };
+
+  const sendEmail = async () => {
     const res = await fetch("https://formsubmit.co/ajax/" + CONFIG.email, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload)
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === "false" || data.success === false) throw new Error();
+    if (!res.ok || data.success === "false" || data.success === false) throw new Error("email");
+  };
+  const sendSheet = async () => {
+    const res = await fetch(CONFIG.sheetUrl, { method: "POST", body: JSON.stringify({ order }) });  // text/plain بدون preflight
+    const data = await res.json();
+    if (!data.ok) throw new Error("sheet");
+  };
+
+  const jobs = [];
+  if (CONFIG.sheetUrl) jobs.push(sendSheet());
+  if (CONFIG.email && CONFIG.email !== "your@email.com") jobs.push(sendEmail());
+
+  const btn = $("submit"); btn.disabled = true; btn.textContent = t("sending");
+  try {
+    if (!jobs.length) throw new Error("no_target");
+    const results = await Promise.allSettled(jobs);
+    if (!results.some(x => x.status === "fulfilled")) throw new Error("all_failed");
     $("orderNo").textContent = "#" + orderNo;
     go(4);
   } catch {
