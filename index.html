@@ -108,7 +108,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
   <!-- ٢: اختيار الأصناف -->
   <section id="v2" hidden>
-    <button class="ghost" type="button" data-go="1" data-t="changeSufra"></button>
+    <button class="ghost" type="button" id="back2"></button>
     <header>
       <h1 id="v2title"></h1>
       <p class="sub" id="v2sub"></p>
@@ -256,7 +256,7 @@ const T = {
     of: (a,b) => `${a} من ${b}`, currency: "ريال",
     chooseSufra: "اختر سفرة", toItems: "اختيار الأصناف", next: "التالي",
     chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
-    changeSufra: "→ تغيير السفرة", editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
+    changeSufra: "→ تغيير السفرة", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
     name: "الاسم", phone: "رقم الجوال", date: "تاريخ الجاذرينج", time: "وقت التوصيل",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
@@ -274,7 +274,7 @@ const T = {
     of: (a,b) => `${a} of ${b}`, currency: "SAR",
     chooseSufra: "Choose a platter", toItems: "Choose items", next: "Next",
     chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
-    changeSufra: "← Change platter", editItems: "← Edit items", details: "Order details",
+    changeSufra: "← Change platter", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
     name: "Name", phone: "Mobile number", date: "Gathering date", time: "Delivery time",
     address: "Address or location link", addressPh: "District, street, or Google Maps link",
     notes: "Notes (optional)", send: "Send order", sending: "Sending...",
@@ -292,7 +292,7 @@ const T = {
     of: (a,b) => `${b} میں سے ${a}`, currency: "ریال",
     chooseSufra: "دسترخوان منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
     chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
-    changeSufra: "→ دسترخوان تبدیل کریں", editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
+    changeSufra: "→ دسترخوان تبدیل کریں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
     name: "نام", phone: "موبائل نمبر", date: "تقریب کی تاریخ", time: "ڈیلیوری کا وقت",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
@@ -310,7 +310,7 @@ try { const s = localStorage.getItem("lang"); if (T[s]) lang = s; } catch {}
 const t = k => T[lang][k];
 const num = n => Number(n).toLocaleString(lang === "ar" ? "ar-SA" : "en-US");
 const sep = () => lang === "en" ? ", " : "، ";
-let step = 1, sufra = null;
+let step = 1, sufra = null, catIdx = 0;
 let picks = CONFIG.categories.map(() => new Set());
 
 (() => { const d = new Date(); d.setDate(d.getDate() + CONFIG.minDaysAhead);
@@ -360,9 +360,11 @@ function renderSufras(){
 function renderCats(){
   const s = CONFIG.sufras[sufra], lim = s.picks;
   $("v2title").textContent = s.name[lang];
-  $("v2sub").textContent = `${t("serves")(num(s.min), num(s.max))} · ${t("pickRule")(lim === 1 ? 1 : num(lim))}`;
+  $("v2sub").textContent = `${t("catStep")(num(catIdx + 1), num(CONFIG.categories.length))} · ${t("pickRule")(lim === 1 ? 1 : num(lim))}`;
+  $("back2").textContent = catIdx > 0 ? t("prevCat") : t("changeSufra");
   const box = $("cats"); box.innerHTML = "";
   CONFIG.categories.forEach((c, ci) => {
+    if (ci !== catIdx) return;
     const set = picks[ci], full = set.size >= lim;
     const sec = document.createElement("section"); sec.className = "cat";
     sec.innerHTML = `<div class="cat-h"><h2></h2><span class="pill${full ? " full" : ""}"></span></div><div class="dishes"></div>`;
@@ -402,11 +404,10 @@ function updateBar(){
     if (sufra != null) { const b = document.createElement("b"); b.textContent = CONFIG.sufras[sufra].name[lang]; info.appendChild(b); }
     nx.textContent = t("toItems"); nx.disabled = sufra == null;
   } else if (step === 2) {
-    const lim = CONFIG.sufras[sufra].picks;
-    const total = CONFIG.categories.length * lim;
-    const chosen = picks.reduce((a, s) => a + s.size, 0);
-    info.innerHTML = t("chosen")(num(chosen), num(total));
-    nx.textContent = t("next"); nx.disabled = !catsDone();
+    const lim = CONFIG.sufras[sufra].picks, n = picks[catIdx].size;
+    info.innerHTML = t("chosen")(num(n), num(lim));
+    nx.textContent = t("next");
+    nx.disabled = CONFIG.requireFull ? n !== lim : n < 1;
   }
 }
 
@@ -437,9 +438,18 @@ function renderSummary(){
   if (s.price != null) add(t("price"), `${num(s.price)} ${t("currency")}`);
 }
 
-$("next").onclick = () => go(step + 1);
+$("next").onclick = () => {
+  if (step === 1) { catIdx = 0; go(2); return; }
+  if (step === 2 && catIdx < CONFIG.categories.length - 1) { catIdx++; renderCats(); updateBar(); window.scrollTo(0, 0); return; }
+  if (step === 2 && !catsDone()) return;
+  go(step + 1);
+};
+$("back2").onclick = () => {
+  if (catIdx > 0) { catIdx--; renderCats(); updateBar(); window.scrollTo(0, 0); }
+  else go(1);
+};
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
-$("again").onclick = () => { sufra = null; picks = CONFIG.categories.map(() => new Set()); $("form").reset(); renderSufras(); go(1); };
+$("again").onclick = () => { sufra = null; catIdx = 0; picks = CONFIG.categories.map(() => new Set()); $("form").reset(); renderSufras(); go(1); };
 
 $("form").addEventListener("submit", async e => {
   e.preventDefault();
