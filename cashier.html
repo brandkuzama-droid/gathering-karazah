@@ -71,6 +71,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .acts button{flex:1;min-width:80px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px;font-weight:700;color:var(--fg)}
 .acts button.main{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .acts button:disabled{opacity:.5;cursor:wait}
+.views{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;width:fit-content;max-width:100%}
+.views button{border:0;background:none;border-radius:9px;padding:8px 18px;font-weight:700;color:var(--muted)}
+.views button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.mcat{margin-bottom:22px}
+.mcat-h{display:flex;align-items:baseline;gap:10px;margin:0 0 10px}
+.mcat-h h2{margin:0;font-size:1.15rem;font-weight:800}
+.mitems{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.mitem{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:start;color:var(--fg);min-width:0}
+.mitem span:first-child{min-width:0;overflow-wrap:anywhere}
+.mitem .st{flex-shrink:0;font-size:.78rem;font-weight:700;border-radius:999px;padding:2px 10px;background:#E6F2EA;color:var(--ok)}
+.mitem.is-off{background:var(--soft);border-color:var(--cancel)}
+.mitem.is-off span:first-child{text-decoration:line-through;color:var(--muted)}
+.mitem.is-off .st{background:var(--cancel);color:#fff}
+.mitem:disabled{opacity:.6;cursor:wait}
 .empty{text-align:center;color:var(--muted);padding:60px 10px;background:var(--surface);border:1px dashed var(--line);border-radius:16px}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));inset-inline-start:max(16px,env(safe-area-inset-left,0px));
   background:var(--fg);color:#fff;border-radius:10px;padding:10px 16px;font-weight:600}
@@ -101,12 +115,23 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
         <button class="ghost" id="logout" type="button">خروج</button>
       </div>
     </div>
-    <div class="tabs" id="tabs"></div>
-    <div class="grid" id="grid"></div>
+    <div class="views" id="views" role="group" aria-label="القسم">
+      <button type="button" data-v="orders" aria-pressed="true">الطلبات</button>
+      <button type="button" data-v="menu" aria-pressed="false">الأصناف</button>
+    </div>
+    <section id="ordersView">
+      <div class="tabs" id="tabs"></div>
+      <div class="grid" id="grid"></div>
+    </section>
+    <section id="menuView" hidden>
+      <p class="muted" style="margin-bottom:14px">اضغط على الصنف عشان توقفه أو ترجّعه. الصنف الموقوف يطلع للعميل "غير متوفر" وما يقدر يختاره. التغيير يوصل للعملاء على طول.</p>
+      <div id="menuList"></div>
+    </section>
   </main>
 </div>
 <div class="toast" id="toast" hidden></div>
 
+<script src="menu.js"></script>
 <script>
 /* =========================================================
    الصق هنا نفس رابط Apps Script اللي في صفحة الطلب
@@ -126,6 +151,7 @@ const TABS = [
   { id:"all", label:"الكل", f:() => true },
 ];
 
+let OFF = new Set(), view = "orders", savingAvail = false;
 let alarm = null, key = "", orders = [], seen = null, tab = "new", soundOn = true, timer = null, busy = {};
 try { key = localStorage.getItem("cashierKey") || ""; soundOn = localStorage.getItem("cashierSound") !== "off"; } catch {}
 
@@ -191,6 +217,7 @@ async function load(){
   const res = await fetch(SHEET_URL + "?key=" + encodeURIComponent(key) + "&t=" + Date.now());
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "fail");
+  if (Array.isArray(data.off) && !savingAvail) { OFF = new Set(data.off); if (view === "menu") renderMenu(); }
   return data.orders || [];
 }
 
@@ -327,6 +354,48 @@ $("login").addEventListener("submit", async e => {
   finally { $("loginBtn").disabled = false; }
 });
 $("logout").onclick = logout;
+
+// ===== الأصناف المتوفرة =====
+function renderMenu(){
+  const box = $("menuList"); box.innerHTML = "";
+  if (typeof MENU_CATEGORIES === "undefined") { box.appendChild(el("div", "empty", "ما قدرنا نحمّل قائمة الأصناف.")); return; }
+  MENU_CATEGORIES.forEach(c => {
+    const sec = el("section", "mcat");
+    const h = el("div", "mcat-h"); const offN = c.items.filter(it => OFF.has(it.ar)).length;
+    h.append(el("h2", null, c.name.ar), el("span", "muted", offN ? `${offN} غير متوفر` : "كلها متوفرة"));
+    const grid = el("div", "mitems");
+    c.items.forEach(it => {
+      const off = OFF.has(it.ar);
+      const b = el("button", "mitem" + (off ? " is-off" : "")); b.type = "button";
+      b.setAttribute("aria-pressed", String(!off));
+      b.append(el("span", null, it.ar), el("span", "st", off ? "غير متوفر" : "متوفر"));
+      b.onclick = () => toggleItem(it.ar);
+      grid.appendChild(b);
+    });
+    sec.append(h, grid); box.appendChild(sec);
+  });
+}
+async function toggleItem(name){
+  if (savingAvail) return;
+  const before = new Set(OFF);
+  if (OFF.has(name)) OFF.delete(name); else OFF.add(name);
+  savingAvail = true; renderMenu();
+  document.querySelectorAll(".mitem").forEach(b => b.disabled = true);
+  try {
+    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "avail", key, off: [...OFF] }) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    toast(OFF.has(name) ? `${name}: غير متوفر` : `${name}: رجع متوفر`);
+  } catch { OFF = before; toast("ما قدرنا نحفظ التغيير، جرّب مرة ثانية"); }
+  finally { savingAvail = false; renderMenu(); }
+}
+$("views").onclick = e => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  view = b.dataset.v;
+  document.querySelectorAll("#views button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("ordersView").hidden = view !== "orders"; $("menuView").hidden = view !== "menu";
+  if (view === "menu") renderMenu();
+};
 $("notif").onclick = askNotify;
 $("sound").onclick = () => {
   soundOn = !soundOn; try { localStorage.setItem("cashierSound", soundOn ? "on" : "off"); } catch {}

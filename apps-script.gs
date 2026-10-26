@@ -47,6 +47,13 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
+    if (d.action === "avail") {   // الكاشير يحدّث الأصناف الغير متوفرة
+      if (d.key !== SECRET) return json_({ ok: false, error: "key" });
+      const off = (Array.isArray(d.off) ? d.off : []).map(x => String(x).slice(0, 100)).slice(0, 300);
+      PropertiesService.getScriptProperties().setProperty("off", JSON.stringify(off));
+      return json_({ ok: true, off: off });
+    }
+
     const sh = sheet_();
 
     if (d.action === "status") {
@@ -99,7 +106,13 @@ function notify_(o) {
 }
 
 // شاشة الكاشير تقرأ آخر الطلبات (تحتاج كلمة السر)
+function off_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty("off") || "[]"); } catch (x) { return []; }
+}
+
 function doGet(e) {
+  // صفحة الطلب تقرأ الأصناف الغير متوفرة (بدون كلمة سر، ما فيها بيانات عملاء)
+  if (e.parameter.action === "menu") return json_({ ok: true, off: off_() });
   if ((e.parameter.key || "") !== SECRET) return json_({ ok: false, error: "key" });
   const v = sheet_().getDataRange().getValues();
   v.shift();
@@ -112,5 +125,5 @@ function doGet(e) {
     name: r[6], phone: String(r[7]), contact: r[8],
     date: fmtDate(r[9]), notes: r[10], lang: r[11], district: r[12] || ""
   })).reverse();
-  return json_({ ok: true, orders: orders });
+  return json_({ ok: true, orders: orders, off: off_() });
 }
