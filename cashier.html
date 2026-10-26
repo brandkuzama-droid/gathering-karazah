@@ -111,6 +111,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <h1>طلبات الجاذرينج</h1>
       <div class="live"><span class="dot" id="dot"></span><span id="liveTxt">متصل</span>
         <button class="ghost" id="notif" type="button" hidden>🖥️ تفعيل إشعارات الجهاز</button>
+        <button class="ghost" id="testSound" type="button">🔊 تجربة الصوت</button>
         <button class="ghost" id="sound" type="button">🔔 الصوت شغال</button>
         <button class="ghost" id="logout" type="button">خروج</button>
       </div>
@@ -159,22 +160,40 @@ function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; cl
 
 // صوت التنبيه
 let ctx = null;
+// نغمة إنذار عالية: نغمتين متناوبتين (عالي/واطي) مثل جرس الطلبات، تتكرر ٣ مرات
+let master = null;
 function beep(){
   if (!soundOn) return;
   try {
     ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-    [0, .25, .5].forEach(d => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
-      g.gain.setValueAtTime(.0001, ctx.currentTime + d);
-      g.gain.exponentialRampToValueAtTime(.3, ctx.currentTime + d + .02);
-      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + d + .2);
-      o.start(ctx.currentTime + d); o.stop(ctx.currentTime + d + .22);
+    if (!master) {
+      // ضاغط + تكبير عشان الصوت يطلع أعلى بدون تشويش
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -10; comp.knee.value = 0; comp.ratio.value = 12; comp.attack.value = 0.002; comp.release.value = 0.1;
+      master = ctx.createGain(); master.gain.value = 1.6;
+      master.connect(comp); comp.connect(ctx.destination);
+    }
+    const t0 = ctx.currentTime + 0.02;
+    const notes = [1319, 988, 1319, 988, 1319, 988];   // E6 / B5
+    notes.forEach((f, k) => {
+      const at = t0 + k * 0.16;
+      [1, 2].forEach((mult, layer) => {               // نغمة أساسية + أوكتاف أعلى عشان تخترق الضجة
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = layer ? "triangle" : "square";
+        o.frequency.setValueAtTime(f * mult, at);
+        o.connect(g); g.connect(master);
+        const peak = layer ? 0.25 : 0.55;
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(peak, at + 0.01);
+        g.gain.setValueAtTime(peak, at + 0.11);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.15);
+        o.start(at); o.stop(at + 0.16);
+      });
     });
   } catch {}
 }
 
-// التنبيه يتكرر كل ٣ ثواني لين ما يبقى أي طلب جديد (قبول أو رفض)
+// التنبيه يتكرر كل ثانيتين لين ما يبقى أي طلب جديد (قبول أو رفض)
 // إشعار الجهاز: يطلع حتى لو الكاشير في تبويب أو برنامج ثاني
 const canNotify = "Notification" in window;
 function updateNotifBtn(){
@@ -208,7 +227,7 @@ function syncBlink(pending){
 function syncAlarm(){
   const pending = orders.some(o => o.status === "جديد");
   syncBlink(orders.filter(o => o.status === "جديد").length);
-  if (pending && soundOn) { if (!alarm) { beep(); alarm = setInterval(beep, 3000); } }
+  if (pending && soundOn) { if (!alarm) { beep(); alarm = setInterval(beep, 2000); } }
   else { clearInterval(alarm); alarm = null; }
 }
 
@@ -359,6 +378,10 @@ $("login").addEventListener("submit", async e => {
   finally { $("loginBtn").disabled = false; }
 });
 $("logout").onclick = logout;
+$("testSound").onclick = () => {
+  try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch {}
+  const was = soundOn; soundOn = true; beep(); soundOn = was;
+};
 
 // ===== الأصناف المتوفرة =====
 function renderMenu(){
