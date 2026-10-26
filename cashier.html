@@ -84,7 +84,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .mitem.is-off{background:var(--soft);border-color:var(--cancel)}
 .mitem.is-off span:first-child{text-decoration:line-through;color:var(--muted)}
 .mitem.is-off .st{background:var(--cancel);color:#fff}
-.mitem:disabled{opacity:.6;cursor:wait}
+.mitem:disabled{cursor:wait}
 .empty{text-align:center;color:var(--muted);padding:60px 10px;background:var(--surface);border:1px dashed var(--line);border-radius:16px}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));inset-inline-start:max(16px,env(safe-area-inset-left,0px));
   background:var(--fg);color:#fff;border-radius:10px;padding:10px 16px;font-weight:600}
@@ -151,7 +151,7 @@ const TABS = [
   { id:"all", label:"الكل", f:() => true },
 ];
 
-let OFF = new Set(), view = "orders", savingAvail = false;
+let OFF = new Set(), view = "orders", savingAvail = false, availVer = 0;
 let alarm = null, key = "", orders = [], seen = null, tab = "new", soundOn = true, timer = null, busy = {};
 try { key = localStorage.getItem("cashierKey") || ""; soundOn = localStorage.getItem("cashierSound") !== "off"; } catch {}
 
@@ -214,10 +214,15 @@ function syncAlarm(){
 
 async function load(){
   if (!SHEET_URL) throw new Error("no_url");
+  const v = availVer;
   const res = await fetch(SHEET_URL + "?key=" + encodeURIComponent(key) + "&t=" + Date.now());
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "fail");
-  if (Array.isArray(data.off) && !savingAvail) { OFF = new Set(data.off); if (view === "menu") renderMenu(); }
+  if (Array.isArray(data.off) && !savingAvail && v === availVer) {
+    const next = new Set(data.off);
+    const same = next.size === OFF.size && [...next].every(x => OFF.has(x));
+    if (!same) { OFF = next; if (view === "menu") renderMenu(); }
+  }
   return data.orders || [];
 }
 
@@ -377,6 +382,7 @@ function renderMenu(){
 }
 async function toggleItem(name){
   if (savingAvail) return;
+  availVer++;
   const before = new Set(OFF);
   if (OFF.has(name)) OFF.delete(name); else OFF.add(name);
   savingAvail = true; renderMenu();
@@ -387,7 +393,7 @@ async function toggleItem(name){
     if (!data.ok) throw new Error(data.error);
     toast(OFF.has(name) ? `${name}: غير متوفر` : `${name}: رجع متوفر`);
   } catch { OFF = before; toast("ما قدرنا نحفظ التغيير، جرّب مرة ثانية"); }
-  finally { savingAvail = false; renderMenu(); }
+  finally { availVer++; savingAvail = false; renderMenu(); }
 }
 $("views").onclick = e => {
   const b = e.target.closest("button[data-v]"); if (!b) return;
