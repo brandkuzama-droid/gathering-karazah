@@ -262,7 +262,9 @@ function render(freshIds = new Set()){
     });
 
     const cust = el("div", "cust");
-    const r1 = el("div", "row"); r1.append(el("strong", null, o.name || "-"), el("span", "pref", "يفضّل: " + (o.contact || "-")));
+    const r1 = el("div", "row"); r1.append(el("strong", null, o.name || "-"));
+    if (o.district) r1.append(el("span", "pref", "📍 " + o.district));
+    r1.append(el("span", "pref", "يفضّل: " + (o.contact || "-")));
     if (o.lang && o.lang !== "عربي") r1.append(el("span", "pref", o.lang));
     const r2 = el("div", "row");
     const ph = el("span", "phone", o.phone);

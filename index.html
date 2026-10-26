@@ -136,6 +136,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <div class="summary" id="summary"></div>
       <label for="name"><span data-t="name"></span><input id="name" required autocomplete="name"></label>
       <label for="phone"><span data-t="phone"></span><input id="phone" required inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" dir="ltr"></label>
+      <label for="district"><span data-t="district"></span><input id="district" required autocomplete="address-level3"></label>
       <fieldset class="seg">
         <legend data-t="contact"></legend>
         <div class="seg-opts">
@@ -275,7 +276,7 @@ const T = {
     chooseSufra: "اختر سفرة", toItems: "اختيار الأصناف", next: "التالي",
     chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
     changeSufra: "→ تغيير السفرة", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
-    name: "الاسم", phone: "رقم الجوال", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
+    name: "الاسم", phone: "رقم الجوال", district: "اسم الحي", eDistrict: "اكتب اسم الحي.", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
     sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => `خصم ${n}٪`, total: "الإجمالي بعد الخصم",
@@ -293,7 +294,7 @@ const T = {
     chooseSufra: "Choose a platter", toItems: "Choose items", next: "Next",
     chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
     changeSufra: "← Change platter", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
-    name: "Name", phone: "Mobile number", date: "Gathering date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
+    name: "Name", phone: "Mobile number", district: "District", eDistrict: "Enter your district.", date: "Gathering date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
     address: "Address or location link", addressPh: "District, street, or Google Maps link",
     notes: "Notes (optional)", send: "Send order", sending: "Sending...",
     sufra: "Platter", price: "Price", before: "Price before discount", off: n => `${n}% off`, total: "Total after discount",
@@ -311,7 +312,7 @@ const T = {
     chooseSufra: "دسترخوان منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
     chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
     changeSufra: "→ دسترخوان تبدیل کریں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
-    name: "نام", phone: "موبائل نمبر", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
+    name: "نام", phone: "موبائل نمبر", district: "محلے کا نام", eDistrict: "اپنے محلے کا نام لکھیں۔", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
     sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => `${n}٪ رعایت`, total: "رعایت کے بعد کل",
@@ -496,6 +497,7 @@ $("form").addEventListener("submit", async e => {
   const fail = m => { err.textContent = m; err.hidden = false; };
   if (!v("name") || !v("phone")) return fail(t("eNamePhone"));
   if (!/^[0-9+\s]{9,15}$/.test(v("phone"))) return fail(t("ePhone"));
+  if (!v("district")) return fail(t("eDistrict"));
   if (!v("date")) return fail(t("eDate"));
   if (v("date") < $("date").min) return fail(t("eSoon")(CONFIG.minDaysAhead));
 
@@ -516,7 +518,7 @@ $("form").addEventListener("submit", async e => {
     payload["الإجمالي"] = `${tt.after} ريال`;
   }
   Object.assign(payload, {
-    "الاسم": v("name"), "الجوال": v("phone"),
+    "الاسم": v("name"), "الجوال": v("phone"), "الحي": v("district"),
     "طريقة التواصل": document.querySelector('input[name="contact"]:checked').value === "wa" ? "واتساب" : "اتصال",
     "التاريخ": v("date"), "ملاحظات": v("notes") || "-",
     "لغة العميل": { ar: "عربي", en: "English", ur: "أوردو" }[lang]
@@ -529,7 +531,7 @@ $("form").addEventListener("submit", async e => {
     sufra: `${s.name.ar} (تكفي ${s.min} - ${s.max} أشخاص)`,
     items: chosen("ar").map(x => `${x.cat}: ${x.list.join("، ")}`).join("\n"),
     total: tt ? `${tt.after} ريال` + (CONFIG.discount ? ` (قبل الخصم ${tt.before})` : "") : "-",
-    name: v("name"), phone: v("phone"),
+    name: v("name"), phone: v("phone"), district: v("district"),
     contact: payload["طريقة التواصل"], date: v("date"),
     notes: v("notes"), lang: payload["لغة العميل"]
   };
