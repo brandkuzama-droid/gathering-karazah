@@ -6,6 +6,10 @@
 // كلمة سر شاشة الكاشير — غيّرها لكلمة خاصة فيك، ونفسها تكتبها في شاشة الكاشير
 const SECRET = "CHANGE-ME-1234";
 
+// تنبيه تيليجرام: يوصل للجوال حتى لو شاشة الكاشير مسكرة (اتركه فاضي لو ما تبيه)
+const TELEGRAM_TOKEN = "";   // من BotFather
+const TELEGRAM_CHAT_ID = ""; // رقم المحادثة أو القروب
+
 const SHEET_NAME = "الطلبات";
 const HEADERS = ["رقم الطلب", "وقت الطلب", "الحالة", "السفرة", "الأصناف", "الإجمالي",
                  "الاسم", "الجوال", "طريقة التواصل", "تاريخ الجاذرينج", "ملاحظات", "لغة العميل"];
@@ -62,10 +66,28 @@ function doPost(e) {
       clean_(o.name, 120), "'" + String(o.phone).replace(/[^0-9+\s]/g, "").slice(0, 20), clean_(o.contact, 20),
       clean_(o.date, 20), clean_(o.notes, 1000), clean_(o.lang, 20)
     ]);
+    try { telegram_(o); } catch (x) {}   // فشل التنبيه ما يوقف حفظ الطلب
     return json_({ ok: true });
   } finally {
     lock.releaseLock();
   }
+}
+
+function telegram_(o) {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const text = [
+    "🔔 طلب جاذرينج جديد #" + o.id,
+    "📅 " + o.date,
+    "🍽️ " + o.sufra,
+    String(o.items || ""),
+    "💰 " + o.total,
+    "👤 " + o.name + " · " + o.phone + " (" + o.contact + ")",
+    o.notes ? "📝 " + o.notes : ""
+  ].filter(Boolean).join("\n");
+  UrlFetchApp.fetch("https://api.telegram.org/bot" + TELEGRAM_TOKEN + "/sendMessage", {
+    method: "post", contentType: "application/json", muteHttpExceptions: true,
+    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text.slice(0, 4000) })
+  });
 }
 
 // شاشة الكاشير تقرأ آخر الطلبات (تحتاج كلمة السر)
