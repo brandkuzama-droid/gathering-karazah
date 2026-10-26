@@ -40,7 +40,12 @@ h2{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0}
 .sufra .t{font-family:var(--display);font-weight:800;font-size:1.35rem;color:var(--accent)}
 .sufra .ppl{font-weight:700}
 .sufra .rule{color:var(--muted);font-size:.875rem}
-.sufra .pr{font-weight:700;font-variant-numeric:tabular-nums}
+.sufra .pr{font-weight:800;font-size:1.15rem;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.old{color:var(--muted);font-weight:400;font-size:.85em;text-decoration:line-through}
+.badge{font-size:.75rem;font-weight:700;background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:1px 8px;align-self:flex-start}
+.dish .ex{padding:0 10px 10px;margin-top:-6px;font-size:.82rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.summary .row.total{border-top:1px solid var(--line);padding-top:8px;font-weight:800;font-size:1.1rem}
+.summary .row.total .k{color:var(--fg)}
 
 /* الأصناف */
 .cat{margin-top:26px}
@@ -162,13 +167,15 @@ const CONFIG = {
   defaultLang: "ar",            // اللغة الافتراضية: ar أو en أو ur
   requireFull: true,            // true = لازم يكمل العدد المسموح من كل فئة
   minDaysAhead: 1,              // أقرب تاريخ مسموح للطلب (بالأيام)
+  discount: 15,                 // نسبة الخصم ٪ على السفرة والزيادات (0 = بدون خصم)
 
-  // picks = عدد الأصناف المسموحة من كل فئة، price = السعر (null = ما يظهر)
+  // picks = عدد الأصناف المسموحة من كل فئة، price = السعر قبل الخصم (null = ما يظهر)
+  // extra في الصنف = زيادة على سعر السفرة قبل الخصم
   sufras: [
-    { name: { ar: "سفرة ١", en: "Platter 1", ur: "دسترخوان 1" }, min: 4,  max: 6,  picks: 1, price: null },
-    { name: { ar: "سفرة ٢", en: "Platter 2", ur: "دسترخوان 2" }, min: 8,  max: 10, picks: 2, price: null },
-    { name: { ar: "سفرة ٣", en: "Platter 3", ur: "دسترخوان 3" }, min: 14, max: 18, picks: 3, price: null },
-    { name: { ar: "سفرة ٤", en: "Platter 4", ur: "دسترخوان 4" }, min: 20, max: 25, picks: 4, price: null },
+    { name: { ar: "سفرة ١", en: "Platter 1", ur: "دسترخوان 1" }, min: 4,  max: 6,  picks: 1, price: 579 },
+    { name: { ar: "سفرة ٢", en: "Platter 2", ur: "دسترخوان 2" }, min: 8,  max: 10, picks: 2, price: 1049 },
+    { name: { ar: "سفرة ٣", en: "Platter 3", ur: "دسترخوان 3" }, min: 14, max: 18, picks: 3, price: 1359 },
+    { name: { ar: "سفرة ٤", en: "Platter 4", ur: "دسترخوان 4" }, min: 20, max: 25, picks: 4, price: 1879 },
   ],
 
   // الأصناف. img = رابط الصورة (صور قوقل درايف: https://drive.google.com/thumbnail?id=رقم_الملف&sz=w800 ، والملف لازم يكون مشارك للجميع)
@@ -211,11 +218,11 @@ const CONFIG = {
       { ar: "كباب حلبي", en: "Aleppo Kebab", ur: "حلبی کباب", img: "https://drive.google.com/thumbnail?id=1-Kyvw844YyufwoS2iYgliJbsU7Dpm46v&sz=w800" },
       { ar: "كباب علي نازك", en: "Ali Nazik Kebab", ur: "علی نازک کباب", img: "" },
       { ar: "دولمى", en: "Dolma", ur: "دولمہ", img: "" },
-      { ar: "شيش برك", en: "Shish Barak", ur: "شیش برک", img: "" },
+      { ar: "شيش برك", en: "Shish Barak", ur: "شیش برک", img: "", extra: 30 },
       { ar: "خاروف محشي", en: "Stuffed Lamb", ur: "بھرا ہوا دنبہ", img: "" },
       { ar: "كبه باللبن مع الرز", en: "Kibbeh in Yogurt with Rice", ur: "دہی کبہ چاول کے ساتھ", img: "" },
-      { ar: "كوسى باللبن مع الرز", en: "Zucchini in Yogurt with Rice", ur: "دہی کدو چاول کے ساتھ", img: "" },
-      { ar: "طاجن الدجاج بالكاري", en: "Chicken Curry Tagine", ur: "چکن کری طاجن", img: "" },
+      { ar: "كوسى باللبن مع الرز", en: "Zucchini in Yogurt with Rice", ur: "دہی کدو چاول کے ساتھ", img: "", extra: 30 },
+      { ar: "طاجن الدجاج بالكاري", en: "Chicken Curry Tagine", ur: "چکن کری طاجن", img: "", extra: 30 },
       { ar: "لازنيا دجاج", en: "Chicken Lasagna", ur: "چکن لزانیا", img: "" },
       { ar: "صاجية سكندر", en: "Iskender Sajiya", ur: "اسکندر ساجیہ", img: "" },
       { ar: "دجاج بورسيني", en: "Chicken Porcini", ur: "چکن پورچینی", img: "" },
@@ -260,7 +267,7 @@ const T = {
     name: "الاسم", phone: "رقم الجوال", date: "تاريخ الجاذرينج", time: "وقت التوصيل",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
-    sufra: "السفرة", price: "السعر",
+    sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => `خصم ${n}٪`, total: "الإجمالي بعد الخصم",
     orderNo: "رقم طلبك", thanks: "وصلنا طلبك، شكراً لك", willCall: "بنتواصل معك على الجوال لتأكيد الطلب.", newOrder: "طلب جديد",
     eNamePhone: "اكتب الاسم ورقم الجوال.", ePhone: "رقم الجوال غير صحيح، اكتبه مثل 05xxxxxxxx.",
     eDate: "حدد تاريخ ووقت الجاذرينج.", eSoon: n => `التاريخ لازم يكون بعد ${n} يوم على الأقل من اليوم.`,
@@ -278,7 +285,7 @@ const T = {
     name: "Name", phone: "Mobile number", date: "Gathering date", time: "Delivery time",
     address: "Address or location link", addressPh: "District, street, or Google Maps link",
     notes: "Notes (optional)", send: "Send order", sending: "Sending...",
-    sufra: "Platter", price: "Price",
+    sufra: "Platter", price: "Price", before: "Price before discount", off: n => `${n}% off`, total: "Total after discount",
     orderNo: "Your order number", thanks: "We got your order, thank you", willCall: "We'll call you to confirm.", newOrder: "New order",
     eNamePhone: "Enter your name and mobile number.", ePhone: "Invalid mobile number. Use a format like 05xxxxxxxx.",
     eDate: "Choose the gathering date and time.", eSoon: n => `The date must be at least ${n} day(s) from today.`,
@@ -296,7 +303,7 @@ const T = {
     name: "نام", phone: "موبائل نمبر", date: "تقریب کی تاریخ", time: "ڈیلیوری کا وقت",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
-    sufra: "دسترخوان", price: "قیمت",
+    sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => `${n}٪ رعایت`, total: "رعایت کے بعد کل",
     orderNo: "آپ کا آرڈر نمبر", thanks: "آپ کا آرڈر موصول ہو گیا، شکریہ", willCall: "تصدیق کے لیے ہم آپ سے رابطہ کریں گے۔", newOrder: "نیا آرڈر",
     eNamePhone: "اپنا نام اور موبائل نمبر لکھیں۔", ePhone: "موبائل نمبر درست نہیں۔ 05xxxxxxxx کی طرح لکھیں۔",
     eDate: "تقریب کی تاریخ اور وقت منتخب کریں۔", eSoon: n => `تاریخ آج سے کم از کم ${n} دن بعد ہونی چاہیے۔`,
@@ -310,6 +317,14 @@ try { const s = localStorage.getItem("lang"); if (T[s]) lang = s; } catch {}
 const t = k => T[lang][k];
 const num = n => Number(n).toLocaleString(lang === "ar" ? "ar-SA" : "en-US");
 const sep = () => lang === "en" ? ", " : "، ";
+const disc = p => Math.round(p * (100 - CONFIG.discount)) / 100;   // السعر بعد الخصم
+const money = p => `${num(p)} ${t("currency")}`;
+function totals(){
+  const s = CONFIG.sufras[sufra];
+  const extras = CONFIG.categories.reduce((a, c, ci) => a + [...picks[ci]].reduce((b, i) => b + (c.items[i].extra || 0), 0), 0);
+  const before = (s.price || 0) + extras;
+  return { base: s.price || 0, extras, before, after: disc(before) };
+}
 let step = 1, sufra = null, catIdx = 0;
 let picks = CONFIG.categories.map(() => new Set());
 
@@ -344,11 +359,14 @@ function renderSufras(){
     b.type = "button"; b.className = "sufra" + (sufra === i ? " on" : "");
     b.setAttribute("aria-pressed", sufra === i);
     b.innerHTML = `<span class="t"></span><span class="ppl"></span><span class="rule"></span>` +
-      (s.price != null ? `<span class="pr"></span>` : "");
+      (s.price != null ? `<span class="pr"><span class="now"></span>${CONFIG.discount ? '<span class="old"></span><span class="badge"></span>' : ""}</span>` : "");
     b.querySelector(".t").textContent = s.name[lang];
     b.querySelector(".ppl").textContent = t("serves")(num(s.min), num(s.max));
     b.querySelector(".rule").textContent = t("rule")(s.picks === 1 ? 1 : num(s.picks));
-    if (s.price != null) b.querySelector(".pr").textContent = `${num(s.price)} ${t("currency")}`;
+    if (s.price != null) {
+      b.querySelector(".now").textContent = money(disc(s.price));
+      if (CONFIG.discount) { b.querySelector(".old").textContent = money(s.price); b.querySelector(".badge").textContent = t("off")(num(CONFIG.discount)); }
+    }
     b.onclick = () => {
       if (sufra !== i) picks = picks.map(set => new Set([...set].slice(0, s.picks)));
       sufra = i; renderSufras(); updateBar();
@@ -379,6 +397,7 @@ function renderCats(){
       d.innerHTML = (it.img ? `<img class="img" alt="" loading="lazy">` : `<div class="img"></div>`) + `<span class="n"></span><span class="ck">✓</span>`;
       if (it.img) { const im = d.querySelector("img"); im.onerror = () => { const f = document.createElement("div"); f.className = "img"; f.textContent = it[lang].trim()[0]; im.replaceWith(f); }; im.src = it.img; } else d.querySelector(".img").textContent = it[lang].trim()[0];
       d.querySelector(".n").textContent = it[lang];
+      if (it.extra) { const ex = document.createElement("span"); ex.className = "ex"; ex.textContent = "+ " + money(disc(it.extra)); d.querySelector(".n").after(ex); }
       d.onclick = () => {
         if (set.has(ii)) set.delete(ii);
         else if (set.size < lim) set.add(ii);
@@ -424,7 +443,8 @@ function go(n){
 
 // اختيارات العميل بلغة معيّنة
 function chosen(l){
-  return CONFIG.categories.map((c, ci) => ({ cat: c.name[l], list: [...picks[ci]].map(i => c.items[i][l]) }));
+  const n = l === "ar" ? x => x : num;
+  return CONFIG.categories.map((c, ci) => ({ cat: c.name[l], list: [...picks[ci]].map(i => c.items[i][l] + (c.items[i].extra ? ` (+${n(disc(c.items[i].extra))})` : "")) }));
 }
 
 function renderSummary(){
@@ -435,7 +455,15 @@ function renderSummary(){
     r.querySelector(".k").textContent = k; r.querySelector(".v").textContent = v; box.appendChild(r); };
   add(t("sufra"), `${s.name[lang]} (${t("serves")(num(s.min), num(s.max))})`);
   chosen(lang).forEach(x => add(x.cat, x.list.join(sep())));
-  if (s.price != null) add(t("price"), `${num(s.price)} ${t("currency")}`);
+  if (s.price != null) {
+    const tt = totals();
+    if (CONFIG.discount) {
+      add(t("before"), money(tt.before)); box.lastChild.querySelector(".v").className = "v old";
+      add(t("off")(num(CONFIG.discount)), "- " + money(Math.round((tt.before - tt.after) * 100) / 100));
+      add(t("total"), money(tt.after));
+    } else add(t("price"), money(tt.before));
+    box.lastChild.classList.add("total");
+  }
 }
 
 $("next").onclick = () => {
@@ -472,7 +500,12 @@ $("form").addEventListener("submit", async e => {
     "السفرة": `${s.name.ar} (تكفي ${s.min} - ${s.max} أشخاص)`,
   };
   chosen("ar").forEach(x => payload[x.cat] = x.list.join("، "));
-  if (s.price != null) payload["السعر"] = `${s.price} ريال`;
+  if (s.price != null) {
+    const tt = totals();
+    payload["السعر قبل الخصم"] = `${tt.before} ريال` + (tt.extras ? ` (السفرة ${tt.base} + زيادات ${tt.extras})` : "");
+    if (CONFIG.discount) payload["الخصم"] = `${CONFIG.discount}٪ (- ${Math.round((tt.before - tt.after) * 100) / 100} ريال)`;
+    payload["الإجمالي"] = `${tt.after} ريال`;
+  }
   Object.assign(payload, {
     "الاسم": v("name"), "الجوال": v("phone"),
     "التاريخ": v("date"), "الوقت": v("time"),
