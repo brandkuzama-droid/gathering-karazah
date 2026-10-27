@@ -303,7 +303,12 @@ function render(freshIds = new Set()){
     const hl = el("div"); hl.append(el("div", "no", "#" + o.id), el("div", "when", ago(o.time)));
     head.append(hl, el("span", "pill", o.status || "جديد"));
 
+    // الحي: من عمود الحي، أو من أول سطر في الملاحظات (كود الشيت القديم)
+    let district = o.district || "", notes = String(o.notes || "");
+    const dm = notes.match(/^📍 الحي: ([^\n]*)\n?/);
+    if (dm) { if (!district) district = dm[1].trim(); notes = notes.slice(dm[0].length).trim(); }
     const date = el("div", "date"); date.append(el("span", null, "تاريخ الجاذرينج"), el("span", null, prettyDate(o.date)));
+    const dist = el("div", "date"); dist.append(el("span", null, "📍 الحي"), el("span", null, district || "-"));
 
     const items = el("ul", "items");
     String(o.items || "").split("\n").filter(Boolean).forEach(line => {
@@ -314,7 +319,6 @@ function render(freshIds = new Set()){
 
     const cust = el("div", "cust");
     const r1 = el("div", "row"); r1.append(el("strong", null, o.name || "-"));
-    if (o.district) r1.append(el("span", "pref", "📍 " + o.district));
     r1.append(el("span", "pref", "يفضّل: " + (o.contact || "-")));
     if (o.lang && o.lang !== "عربي") r1.append(el("span", "pref", o.lang));
     const r2 = el("div", "row");
@@ -323,14 +327,14 @@ function render(freshIds = new Set()){
     const wa = el("a", "link wa", "واتساب"); wa.href = "https://wa.me/" + waNumber(o.phone) + "?text=" + encodeURIComponent(`هلا ${o.name}، نتواصل معك بخصوص طلب الجاذرينج رقم #${o.id}`); wa.target = "_blank"; wa.rel = "noopener";
     r2.append(ph, call, wa);
     cust.append(r1, r2);
-    if (o.notes) cust.append(el("div", "notes", "ملاحظات: " + o.notes));
+    if (notes) cust.append(el("div", "notes", "ملاحظات: " + notes));
 
     const acts = el("div", "acts");
     if (NEXT[o.status]) { const b = el("button", "main", NEXT_LABEL[o.status]); b.type = "button"; b.onclick = () => setStatus(o, NEXT[o.status], b); acts.append(b); }
     if (o.status !== "ملغي" && o.status !== "تم التسليم") { const lbl = o.status === "جديد" ? "رفض" : "إلغاء"; const b = el("button", null, lbl); b.type = "button"; b.dataset.lbl = lbl; b.onclick = () => confirmCancel(o, b); acts.append(b); }
     if (o.status === "ملغي" || o.status === "تم التسليم") { const b = el("button", null, "إرجاع لجديد"); b.type = "button"; b.onclick = () => setStatus(o, "جديد", b); acts.append(b); }
 
-    c.append(head, date, el("div", "sufra", o.sufra), items, el("div", "total", "الإجمالي: " + (o.total || "-")), cust, acts);
+    c.append(head, date, dist, el("div", "sufra", o.sufra), items, el("div", "total", "الإجمالي: " + (o.total || "-")), cust, acts);
     grid.appendChild(c);
   });
 }

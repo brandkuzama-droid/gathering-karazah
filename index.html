@@ -84,6 +84,9 @@ input,textarea{font:inherit;padding:12px;border:1px solid var(--line);border-rad
 .summary .k{color:var(--muted);flex-shrink:0}
 .summary .v{text-align:end;font-weight:500}
 .err{color:var(--warn);margin:0}
+.receipt{width:100%;text-align:start;margin-block:8px}
+.receipt h2{font-size:1.05rem;margin:0 0 4px}
+.receipt .sep{border-top:1px dashed var(--line);margin-block:4px}
 
 /* الشريط السفلي */
 .bar{position:fixed;inset:auto 0 0;background:var(--surface);border-top:1px solid var(--line);
@@ -159,6 +162,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     <div class="num" id="orderNo"></div>
     <h1 style="font-size:1.5rem" data-t="thanks"></h1>
     <p class="sub" data-t="willCall"></p>
+    <div class="summary receipt" id="receipt"></div>
     <button class="btn" id="again" type="button" data-t="newOrder"></button>
   </section>
 </div>
@@ -207,7 +211,7 @@ const T = {
     of: (a,b) => `${a} من ${b}`, currency: "ريال",
     chooseSufra: "اختر سفرة", toItems: "اختيار الأصناف", next: "التالي",
     chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
-    changeSufra: "→ تغيير السفرة", soldOut: "غير متوفر", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
+    changeSufra: "→ تغيير السفرة", yourOrder: "تفاصيل طلبك", soldOut: "غير متوفر", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
     name: "الاسم", phone: "رقم الجوال", district: "اسم الحي", eDistrict: "اكتب اسم الحي.", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
@@ -225,7 +229,7 @@ const T = {
     of: (a,b) => `${a} of ${b}`, currency: "SAR",
     chooseSufra: "Choose a platter", toItems: "Choose items", next: "Next",
     chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
-    changeSufra: "← Change platter", soldOut: "Unavailable", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
+    changeSufra: "← Change platter", yourOrder: "Your order details", soldOut: "Unavailable", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
     name: "Name", phone: "Mobile number", district: "District", eDistrict: "Enter your district.", date: "Gathering date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
     address: "Address or location link", addressPh: "District, street, or Google Maps link",
     notes: "Notes (optional)", send: "Send order", sending: "Sending...",
@@ -243,7 +247,7 @@ const T = {
     of: (a,b) => `${b} میں سے ${a}`, currency: "ریال",
     chooseSufra: "دسترخوان منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
     chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
-    changeSufra: "→ دسترخوان تبدیل کریں", soldOut: "دستیاب نہیں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
+    changeSufra: "→ دسترخوان تبدیل کریں", yourOrder: "آپ کے آرڈر کی تفصیلات", soldOut: "دستیاب نہیں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
     name: "نام", phone: "موبائل نمبر", district: "محلے کا نام", eDistrict: "اپنے محلے کا نام لکھیں۔", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
@@ -289,6 +293,7 @@ function applyLang(){
   renderSufras();
   if (step === 2) renderCats();
   if (step === 3) renderSummary();
+  if (step === 4) renderReceipt();
   updateBar();
 }
 $("langs").onclick = e => {
@@ -386,6 +391,7 @@ function go(n){
   $("steps").style.visibility = n === 4 ? "hidden" : "visible";
   if (n === 2) renderCats();
   if (n === 3) renderSummary();
+  if (n === 4) renderReceipt();
   updateBar(); window.scrollTo(0, 0);
 }
 
@@ -395,9 +401,9 @@ function chosen(l){
   return CONFIG.categories.map((c, ci) => ({ cat: c.name[l], list: [...picks[ci]].map(i => c.items[i][l] + (c.items[i].extra ? ` (+${n(disc(c.items[i].extra))})` : "")) }));
 }
 
-function renderSummary(){
+function renderSummary(target){
   const s = CONFIG.sufras[sufra];
-  const box = $("summary"); box.innerHTML = "";
+  const box = target || $("summary"); box.innerHTML = "";
   const add = (k, v) => { const r = document.createElement("div"); r.className = "row";
     r.innerHTML = `<span class="k"></span><span class="v"></span>`;
     r.querySelector(".k").textContent = k; r.querySelector(".v").textContent = v; box.appendChild(r); };
@@ -412,6 +418,26 @@ function renderSummary(){
     } else add(t("price"), money(tt.before));
     box.lastChild.classList.add("total");
   }
+  return add;
+}
+
+// شاشة التأكيد: الطلب + البيانات اللي كتبها العميل
+function renderReceipt(){
+  const box = $("receipt");
+  const h = document.createElement("h2"); h.textContent = t("yourOrder");
+  const add = renderSummary(box);
+  box.prepend(h);
+  const sepEl = document.createElement("div"); sepEl.className = "sep"; box.appendChild(sepEl);
+  const v = id => $(id).value.trim();
+  const label = k => t(k).replace(/\s*\(.*\)\s*$/, "");   // يشيل "(اختياري)"
+  add(label("name"), v("name"));
+  add(label("phone"), v("phone")); box.lastChild.querySelector(".v").dir = "ltr";
+  add(label("district"), v("district"));
+  const c = document.querySelector('input[name="contact"]:checked');
+  add(label("contact"), t(c && c.value === "wa" ? "wa" : "call"));
+  const d = new Date(v("date") + "T12:00:00");
+  add(label("date"), isNaN(d) ? v("date") : d.toLocaleDateString(lang === "ar" ? "ar-SA" : lang === "ur" ? "ur-PK" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  if (v("notes")) add(label("notes"), v("notes"));
 }
 
 $("next").onclick = () => {
@@ -470,7 +496,8 @@ $("form").addEventListener("submit", async e => {
     total: tt ? `${tt.after} ريال` + (CONFIG.discount ? ` (قبل الخصم ${tt.before})` : "") : "-",
     name: v("name"), phone: v("phone"), district: v("district"),
     contact: payload["طريقة التواصل"], date: v("date"),
-    notes: v("notes"), lang: payload["لغة العميل"]
+    notes: sheetV2 ? v("notes") : ["📍 الحي: " + v("district"), v("notes")].filter(Boolean).join("\n"),
+    lang: payload["لغة العميل"]
   };
 
   const sendEmail = async () => {
@@ -505,12 +532,14 @@ $("form").addEventListener("submit", async e => {
 });
 
 // يجيب الأصناف الغير متوفرة من الشيت
+let sheetV2 = false;   // true = كود الشيت الجديد (فيه عمود الحي)
 async function loadAvailability(){
   if (!CONFIG.sheetUrl) return;
   try {
     const res = await fetch(CONFIG.sheetUrl + "?action=menu&t=" + Date.now());
     const data = await res.json();
     if (!data.ok || !Array.isArray(data.off)) return;
+    sheetV2 = true;
     OFF = new Set(data.off);
     picks = picks.map((set, ci) => new Set([...set].filter(ii => !isOff(CONFIG.categories[ci].items[ii]))));
     if (step === 2) renderCats();
