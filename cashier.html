@@ -66,6 +66,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pref{font-size:.8rem;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted)}
 .link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:4px 10px;color:var(--fg);text-decoration:none;font-size:.88rem;font-weight:600}
 .link.wa{border-color:#25D366;color:#13863F}
+.addr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:.92rem}
+.addr .row{display:flex;gap:6px;align-items:center}
+.link.map{border-color:#4285F4;color:#1A56C4}
 .notes{background:#FFF8E6;border-radius:8px;padding:6px 10px;font-size:.9rem}
 .acts{display:flex;flex-wrap:wrap;gap:6px}
 .acts button{flex:1;min-width:80px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px;font-weight:700;color:var(--fg)}
@@ -309,6 +312,10 @@ function render(freshIds = new Set()){
     if (dm) { if (!district) district = dm[1].trim(); notes = notes.slice(dm[0].length).trim(); }
     const date = el("div", "date"); date.append(el("span", null, "تاريخ الجاذرينج"), el("span", null, prettyDate(o.date)));
     const dist = el("div", "date"); dist.append(el("span", null, "📍 الحي"), el("span", null, district || "-"));
+    // العنوان الوطني ورابط قوقل ماب (إذا العميل كتبهم)
+    const addr = el("div", "addr");
+    if (o.naddr) { const r = el("div", "row"); r.append(el("span", "muted", "العنوان الوطني:"), el("span", "phone", o.naddr)); addr.append(r); }
+    if (/^https:\/\//i.test(o.maplink || "")) { const a = el("a", "link map", "🗺️ فتح الموقع في قوقل ماب"); a.href = o.maplink; a.target = "_blank"; a.rel = "noopener noreferrer"; addr.append(a); }
 
     const items = el("ul", "items");
     String(o.items || "").split("\n").filter(Boolean).forEach(line => {
@@ -334,7 +341,9 @@ function render(freshIds = new Set()){
     if (o.status !== "ملغي" && o.status !== "تم التسليم") { const lbl = o.status === "جديد" ? "رفض" : "إلغاء"; const b = el("button", null, lbl); b.type = "button"; b.dataset.lbl = lbl; b.onclick = () => confirmCancel(o, b); acts.append(b); }
     if (o.status === "ملغي" || o.status === "تم التسليم") { const b = el("button", null, "إرجاع لجديد"); b.type = "button"; b.onclick = () => setStatus(o, "جديد", b); acts.append(b); }
 
-    c.append(head, date, dist, el("div", "sufra", o.sufra), items, el("div", "total", "الإجمالي: " + (o.total || "-")), cust, acts);
+    c.append(head, date, dist);
+    if (addr.childNodes.length) c.append(addr);
+    c.append(el("div", "sufra", o.sufra), items, el("div", "total", "الإجمالي: " + (o.total || "-")), cust, acts);
     grid.appendChild(c);
   });
 }

@@ -33,6 +33,7 @@ h2{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0}
 .sub{color:var(--muted);margin:0}
 
 /* السفر */
+.coupon{display:flex;align-items:center;gap:8px;width:fit-content;max-width:100%;margin:0 0 14px;padding:8px 14px;border:1.5px dashed var(--accent);border-radius:12px;background:var(--soft);color:var(--accent);font-weight:700}
 .sufras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .sufra{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:18px;cursor:pointer;
   display:flex;flex-direction:column;gap:6px;text-align:start;font:inherit;color:inherit}
@@ -120,6 +121,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <h1 id="brand"></h1>
       <p class="sub" data-t="pickSufra"></p>
     </header>
+    <p class="coupon" id="couponBar" hidden></p>
     <div class="sufras" id="sufras"></div>
   </section>
 
@@ -142,6 +144,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <label for="name"><span data-t="name"></span><input id="name" required autocomplete="name"></label>
       <label for="phone"><span data-t="phone"></span><input id="phone" required inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" dir="ltr"></label>
       <label for="district"><span data-t="district"></span><input id="district" required autocomplete="address-level3"></label>
+      <label for="naddr"><span data-t="naddr"></span><input id="naddr" maxlength="40" dir="ltr" placeholder="RRRD2929" autocomplete="off"></label>
+      <label for="maplink"><span data-t="maplink"></span><input id="maplink" type="url" inputmode="url" maxlength="500" dir="ltr" placeholder="https://maps.app.goo.gl/..."></label>
       <fieldset class="seg">
         <legend data-t="contact"></legend>
         <div class="seg-opts">
@@ -186,7 +190,8 @@ const CONFIG = {
   defaultLang: "ar",            // اللغة الافتراضية: ar أو en أو ur
   requireFull: true,            // true = لازم يكمل العدد المسموح من كل فئة
   minDaysAhead: 1,              // أقرب تاريخ مسموح للطلب (بالأيام)
-  discount: 20,                 // نسبة الخصم % على السفرة والزيادات (0 = بدون خصم)
+  discount: 20,                 // نسبة الخصم %
+  coupon: "K20",                // كوبون الخصم، ينطبق تلقائياً ("" = بدون اسم كوبون) على السفرة والزيادات (0 = بدون خصم)
 
   // picks = عدد الأصناف المسموحة من كل فئة، price = السعر قبل الخصم (null = ما يظهر)
   // extra في الصنف = زيادة على سعر السفرة قبل الخصم
@@ -212,10 +217,10 @@ const T = {
     chooseSufra: "اختر سفرة", toItems: "اختيار الأصناف", next: "التالي",
     chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
     changeSufra: "→ تغيير السفرة", yourOrder: "تفاصيل طلبك", soldOut: "غير متوفر", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
-    name: "الاسم", phone: "رقم الجوال", district: "اسم الحي", eDistrict: "اكتب اسم الحي.", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
+    name: "الاسم", phone: "رقم الجوال", district: "اسم الحي", eDistrict: "اكتب اسم الحي.", naddr: "رقم العنوان الوطني (اختياري)", maplink: "رابط الموقع في قوقل ماب (اختياري)", eMap: "رابط الموقع لازم يبدأ بـ https://", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
-    sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => `خصم ${n}%`, total: "الإجمالي بعد الخصم",
+    sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => CONFIG.coupon ? `كوبون ${CONFIG.coupon} · خصم ${n}%` : `خصم ${n}%`, couponOn: c => `كوبون ${c} مطبّق تلقائياً`, total: "الإجمالي بعد الخصم",
     orderNo: "رقم طلبك", thanks: "وصلنا طلبك، شكراً لك", willCall: "بنتواصل معك لتأكيد الطلب.", newOrder: "طلب جديد",
     eNamePhone: "اكتب الاسم ورقم الجوال.", ePhone: "رقم الجوال غير صحيح، اكتبه مثل 05xxxxxxxx.",
     eDate: "حدد تاريخ الجاذرينج.", eSoon: n => `التاريخ لازم يكون بعد ${n} يوم على الأقل من اليوم.`,
@@ -230,10 +235,10 @@ const T = {
     chooseSufra: "Choose a platter", toItems: "Choose items", next: "Next",
     chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
     changeSufra: "← Change platter", yourOrder: "Your order details", soldOut: "Unavailable", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
-    name: "Name", phone: "Mobile number", district: "District", eDistrict: "Enter your district.", date: "Gathering date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
+    name: "Name", phone: "Mobile number", district: "District", eDistrict: "Enter your district.", naddr: "National address short code (optional)", maplink: "Google Maps location link (optional)", eMap: "The location link must start with https://", date: "Gathering date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
     address: "Address or location link", addressPh: "District, street, or Google Maps link",
     notes: "Notes (optional)", send: "Send order", sending: "Sending...",
-    sufra: "Platter", price: "Price", before: "Price before discount", off: n => `${n}% off`, total: "Total after discount",
+    sufra: "Platter", price: "Price", before: "Price before discount", off: n => CONFIG.coupon ? `Coupon ${CONFIG.coupon} · ${n}% off` : `${n}% off`, couponOn: c => `Coupon ${c} applied automatically`, total: "Total after discount",
     orderNo: "Your order number", thanks: "We got your order, thank you", willCall: "We'll call you to confirm.", newOrder: "New order",
     eNamePhone: "Enter your name and mobile number.", ePhone: "Invalid mobile number. Use a format like 05xxxxxxxx.",
     eDate: "Choose the gathering date.", eSoon: n => `The date must be at least ${n} day(s) from today.`,
@@ -248,10 +253,10 @@ const T = {
     chooseSufra: "دسترخوان منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
     chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
     changeSufra: "→ دسترخوان تبدیل کریں", yourOrder: "آپ کے آرڈر کی تفصیلات", soldOut: "دستیاب نہیں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
-    name: "نام", phone: "موبائل نمبر", district: "محلے کا نام", eDistrict: "اپنے محلے کا نام لکھیں۔", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
+    name: "نام", phone: "موبائل نمبر", district: "محلے کا نام", eDistrict: "اپنے محلے کا نام لکھیں۔", naddr: "قومی پتہ نمبر (اختیاری)", maplink: "گوگل میپس لوکیشن لنک (اختیاری)", eMap: "لوکیشن لنک https:// سے شروع ہونا چاہیے", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
-    sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => `${n}% رعایت`, total: "رعایت کے بعد کل",
+    sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => CONFIG.coupon ? `کوپن ${CONFIG.coupon} · ${n}% رعایت` : `${n}% رعایت`, couponOn: c => `کوپن ${c} خودبخود لاگو`, total: "رعایت کے بعد کل",
     orderNo: "آپ کا آرڈر نمبر", thanks: "آپ کا آرڈر موصول ہو گیا، شکریہ", willCall: "تصدیق کے لیے ہم آپ سے رابطہ کریں گے۔", newOrder: "نیا آرڈر",
     eNamePhone: "اپنا نام اور موبائل نمبر لکھیں۔", ePhone: "موبائل نمبر درست نہیں۔ 05xxxxxxxx کی طرح لکھیں۔",
     eDate: "تقریب کی تاریخ منتخب کریں۔", eSoon: n => `تاریخ آج سے کم از کم ${n} دن بعد ہونی چاہیے۔`,
@@ -290,6 +295,8 @@ function applyLang(){
   $("brand").textContent = CONFIG.brand[lang];
   document.querySelectorAll("#langs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === lang));
   document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
+  const cb = $("couponBar"); cb.hidden = !(CONFIG.coupon && CONFIG.discount);
+  if (!cb.hidden) cb.textContent = `🎟️ ${t("couponOn")(CONFIG.coupon)} · ${CONFIG.discount}%`;
   renderSufras();
   if (step === 2) renderCats();
   if (step === 3) renderSummary();
@@ -433,6 +440,8 @@ function renderReceipt(){
   add(label("name"), v("name"));
   add(label("phone"), v("phone")); box.lastChild.querySelector(".v").dir = "ltr";
   add(label("district"), v("district"));
+  if (v("naddr")) { add(label("naddr"), v("naddr").toUpperCase()); box.lastChild.querySelector(".v").dir = "ltr"; }
+  if (v("maplink")) { add(label("maplink"), "✓"); }
   const c = document.querySelector('input[name="contact"]:checked');
   add(label("contact"), t(c && c.value === "wa" ? "wa" : "call"));
   const d = new Date(v("date") + "T12:00:00");
@@ -461,6 +470,7 @@ $("form").addEventListener("submit", async e => {
   if (!v("name") || !v("phone")) return fail(t("eNamePhone"));
   if (!/^[0-9+\s]{9,15}$/.test(v("phone"))) return fail(t("ePhone"));
   if (!v("district")) return fail(t("eDistrict"));
+  if (v("maplink") && !/^https:\/\/\S+$/i.test(v("maplink"))) return fail(t("eMap"));
   if (!v("date")) return fail(t("eDate"));
   if (v("date") < $("date").min) return fail(t("eSoon")(CONFIG.minDaysAhead));
 
@@ -477,11 +487,12 @@ $("form").addEventListener("submit", async e => {
   if (s.price != null) {
     const tt = totals();
     payload["السعر قبل الخصم"] = `${tt.before} ريال` + (tt.extras ? ` (السفرة ${tt.base} + زيادات ${tt.extras})` : "");
-    if (CONFIG.discount) payload["الخصم"] = `${CONFIG.discount}% (- ${Math.round((tt.before - tt.after) * 100) / 100} ريال)`;
+    if (CONFIG.discount) payload["الخصم"] = (CONFIG.coupon ? `كوبون ${CONFIG.coupon} ` : "") + `${CONFIG.discount}% (- ${Math.round((tt.before - tt.after) * 100) / 100} ريال)`;
     payload["الإجمالي"] = `${tt.after} ريال`;
   }
   Object.assign(payload, {
     "الاسم": v("name"), "الجوال": v("phone"), "الحي": v("district"),
+    "العنوان الوطني": v("naddr").toUpperCase() || "-", "رابط الموقع": v("maplink") || "-",
     "طريقة التواصل": document.querySelector('input[name="contact"]:checked').value === "wa" ? "واتساب" : "اتصال",
     "التاريخ": v("date"), "ملاحظات": v("notes") || "-",
     "لغة العميل": { ar: "عربي", en: "English", ur: "أوردو" }[lang]
@@ -493,8 +504,9 @@ $("form").addEventListener("submit", async e => {
     id: orderNo,
     sufra: `${s.name.ar} (تكفي ${s.min} - ${s.max} أشخاص)`,
     items: chosen("ar").map(x => `${x.cat}: ${x.list.join("، ")}`).join("\n"),
-    total: tt ? `${tt.after} ريال` + (CONFIG.discount ? ` (قبل الخصم ${tt.before})` : "") : "-",
+    total: tt ? `${tt.after} ريال` + (CONFIG.discount ? ` (قبل الخصم ${tt.before}` + (CONFIG.coupon ? `، كوبون ${CONFIG.coupon}` : "") + ")" : "") : "-",
     name: v("name"), phone: v("phone"), district: v("district"),
+    naddr: v("naddr").toUpperCase(), maplink: v("maplink"),
     contact: payload["طريقة التواصل"], date: v("date"),
     notes: sheetV2 ? v("notes") : ["📍 الحي: " + v("district"), v("notes")].filter(Boolean).join("\n"),
     lang: payload["لغة العميل"]

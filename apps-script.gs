@@ -12,7 +12,7 @@ const NOTIFY_EMAILS = "";
 
 const SHEET_NAME = "الطلبات";
 const HEADERS = ["رقم الطلب", "وقت الطلب", "الحالة", "السفرة", "الأصناف", "الإجمالي",
-                 "الاسم", "الجوال", "طريقة التواصل", "تاريخ الجاذرينج", "ملاحظات", "لغة العميل", "الحي"];
+                 "الاسم", "الجوال", "طريقة التواصل", "تاريخ الجاذرينج", "ملاحظات", "لغة العميل", "الحي", "العنوان الوطني", "رابط الموقع"];
 const STATUSES = ["جديد", "مؤكد", "جاهز", "تم التسليم", "ملغي"];
 
 function sheet_() {
@@ -74,7 +74,8 @@ function doPost(e) {
       clean_(o.id, 20), new Date(), "جديد",
       clean_(o.sufra), clean_(o.items, 3000), clean_(o.total, 200),
       clean_(o.name, 120), "'" + String(o.phone).replace(/[^0-9+\s]/g, "").slice(0, 20), clean_(o.contact, 20),
-      clean_(o.date, 20), clean_(o.notes, 1000), clean_(o.lang, 20), clean_(o.district, 100)
+      clean_(o.date, 20), clean_(o.notes, 1000), clean_(o.lang, 20), clean_(o.district, 100),
+      clean_(o.naddr, 40), /^https:\/\/\S+$/i.test(String(o.maplink || "")) ? String(o.maplink).slice(0, 500) : ""
     ]);
     try { notify_(o); } catch (x) {}   // فشل التنبيه ما يوقف حفظ الطلب
     return json_({ ok: true });
@@ -88,7 +89,7 @@ function notify_(o) {
   const rows = [
     ["رقم الطلب", "#" + o.id], ["تاريخ الجاذرينج", o.date], ["السفرة", o.sufra],
     ["الأصناف", String(o.items || "").replace(/\n/g, "<br>")], ["الإجمالي", o.total],
-    ["الاسم", o.name], ["الجوال", o.phone], ["الحي", o.district || "-"], ["طريقة التواصل", o.contact],
+    ["الاسم", o.name], ["الجوال", o.phone], ["الحي", o.district || "-"], ["العنوان الوطني", o.naddr || "-"], ["رابط الموقع", o.maplink || "-"], ["طريقة التواصل", o.contact],
     ["ملاحظات", o.notes || "-"], ["لغة العميل", o.lang || "-"]
   ];
   const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -123,7 +124,7 @@ function doGet(e) {
     time: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
     status: r[2], sufra: r[3], items: r[4], total: r[5],
     name: r[6], phone: String(r[7]), contact: r[8],
-    date: fmtDate(r[9]), notes: r[10], lang: r[11], district: r[12] || ""
+    date: fmtDate(r[9]), notes: r[10], lang: r[11], district: r[12] || "", naddr: r[13] || "", maplink: r[14] || ""
   })).reverse();
   return json_({ ok: true, orders: orders, off: off_() });
 }
