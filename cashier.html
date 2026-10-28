@@ -251,7 +251,7 @@ async function refresh(){
     const ids = new Set(list.map(o => o.id));
     const fresh = seen ? list.filter(o => !seen.has(o.id) && o.status === "جديد") : [];
     seen = ids; orders = list;
-    $("dot").classList.remove("off"); $("liveTxt").textContent = "متصل · آخر تحديث " + new Date().toLocaleTimeString("ar-SA", { hour:"numeric", minute:"2-digit" });
+    $("dot").classList.remove("off"); $("liveTxt").textContent = "متصل · آخر تحديث " + new Date().toLocaleTimeString("ar-SA-u-ca-gregory-nu-latn", { hour:"numeric", minute:"2-digit" });
     if (fresh.length) { fresh.forEach(sysNotify); toast(fresh.length === 1 ? "طلب جديد #" + fresh[0].id : fresh.length + " طلبات جديدة"); }
     render(new Set(fresh.map(o => o.id)));
     syncAlarm();
@@ -267,11 +267,11 @@ function ago(iso){
   if (m < 1) return "الحين";
   if (m < 60) return `قبل ${m} دقيقة`;
   if (m < 1440) return `قبل ${Math.round(m / 60)} ساعة`;
-  return new Date(iso).toLocaleDateString("ar-SA", { day:"numeric", month:"short", hour:"numeric", minute:"2-digit" });
+  return new Date(iso).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { day:"numeric", month:"short", hour:"numeric", minute:"2-digit" });
 }
 function prettyDate(d){
   const x = new Date(d + "T12:00:00");
-  return isNaN(x) ? d : x.toLocaleDateString("ar-SA", { weekday:"long", day:"numeric", month:"long" });
+  return isNaN(x) ? d : x.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { weekday:"long", day:"numeric", month:"long" });
 }
 function waNumber(p){
   let n = String(p).replace(/\D/g, "");

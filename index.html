@@ -186,15 +186,15 @@ const CONFIG = {
   defaultLang: "ar",            // اللغة الافتراضية: ar أو en أو ur
   requireFull: true,            // true = لازم يكمل العدد المسموح من كل فئة
   minDaysAhead: 1,              // أقرب تاريخ مسموح للطلب (بالأيام)
-  discount: 15,                 // نسبة الخصم ٪ على السفرة والزيادات (0 = بدون خصم)
+  discount: 20,                 // نسبة الخصم % على السفرة والزيادات (0 = بدون خصم)
 
   // picks = عدد الأصناف المسموحة من كل فئة، price = السعر قبل الخصم (null = ما يظهر)
   // extra في الصنف = زيادة على سعر السفرة قبل الخصم
   sufras: [
-    { name: { ar: "سفرة ١", en: "Platter 1", ur: "دسترخوان 1" }, min: 4,  max: 6,  picks: 1, price: 579 },
-    { name: { ar: "سفرة ٢", en: "Platter 2", ur: "دسترخوان 2" }, min: 8,  max: 10, picks: 2, price: 1049 },
-    { name: { ar: "سفرة ٣", en: "Platter 3", ur: "دسترخوان 3" }, min: 14, max: 18, picks: 3, price: 1359 },
-    { name: { ar: "سفرة ٤", en: "Platter 4", ur: "دسترخوان 4" }, min: 20, max: 25, picks: 4, price: 1879 },
+    { name: { ar: "سفرة 1", en: "Platter 1", ur: "دسترخوان 1" }, min: 4,  max: 6,  picks: 1, price: 579 },
+    { name: { ar: "سفرة 2", en: "Platter 2", ur: "دسترخوان 2" }, min: 8,  max: 10, picks: 2, price: 1049 },
+    { name: { ar: "سفرة 3", en: "Platter 3", ur: "دسترخوان 3" }, min: 14, max: 18, picks: 3, price: 1359 },
+    { name: { ar: "سفرة 4", en: "Platter 4", ur: "دسترخوان 4" }, min: 20, max: 25, picks: 4, price: 1879 },
   ],
 
   // الأصناف. img = رابط الصورة (صور قوقل درايف: https://drive.google.com/thumbnail?id=رقم_الملف&sz=w800 ، والملف لازم يكون مشارك للجميع)
@@ -215,7 +215,7 @@ const T = {
     name: "الاسم", phone: "رقم الجوال", district: "اسم الحي", eDistrict: "اكتب اسم الحي.", date: "تاريخ الجاذرينج", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
     address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
     notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
-    sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => `خصم ${n}٪`, total: "الإجمالي بعد الخصم",
+    sufra: "السفرة", price: "السعر", before: "السعر قبل الخصم", off: n => `خصم ${n}%`, total: "الإجمالي بعد الخصم",
     orderNo: "رقم طلبك", thanks: "وصلنا طلبك، شكراً لك", willCall: "بنتواصل معك لتأكيد الطلب.", newOrder: "طلب جديد",
     eNamePhone: "اكتب الاسم ورقم الجوال.", ePhone: "رقم الجوال غير صحيح، اكتبه مثل 05xxxxxxxx.",
     eDate: "حدد تاريخ الجاذرينج.", eSoon: n => `التاريخ لازم يكون بعد ${n} يوم على الأقل من اليوم.`,
@@ -251,7 +251,7 @@ const T = {
     name: "نام", phone: "موبائل نمبر", district: "محلے کا نام", eDistrict: "اپنے محلے کا نام لکھیں۔", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
     address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
     notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
-    sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => `${n}٪ رعایت`, total: "رعایت کے بعد کل",
+    sufra: "دسترخوان", price: "قیمت", before: "رعایت سے پہلے قیمت", off: n => `${n}% رعایت`, total: "رعایت کے بعد کل",
     orderNo: "آپ کا آرڈر نمبر", thanks: "آپ کا آرڈر موصول ہو گیا، شکریہ", willCall: "تصدیق کے لیے ہم آپ سے رابطہ کریں گے۔", newOrder: "نیا آرڈر",
     eNamePhone: "اپنا نام اور موبائل نمبر لکھیں۔", ePhone: "موبائل نمبر درست نہیں۔ 05xxxxxxxx کی طرح لکھیں۔",
     eDate: "تقریب کی تاریخ منتخب کریں۔", eSoon: n => `تاریخ آج سے کم از کم ${n} دن بعد ہونی چاہیے۔`,
@@ -263,7 +263,7 @@ const $ = id => document.getElementById(id);
 let lang = CONFIG.defaultLang;
 try { const s = localStorage.getItem("lang"); if (T[s]) lang = s; } catch {}
 const t = k => T[lang][k];
-const num = n => Number(n).toLocaleString(lang === "ar" ? "ar-SA" : "en-US");
+const num = n => Number(n).toLocaleString("en-US");   // أرقام إنجليزية دائماً
 const sep = () => lang === "en" ? ", " : "، ";
 const disc = p => Math.round(p * (100 - CONFIG.discount)) / 100;   // السعر بعد الخصم
 const money = p => `${num(p)} ${t("currency")}`;
@@ -436,7 +436,7 @@ function renderReceipt(){
   const c = document.querySelector('input[name="contact"]:checked');
   add(label("contact"), t(c && c.value === "wa" ? "wa" : "call"));
   const d = new Date(v("date") + "T12:00:00");
-  add(label("date"), isNaN(d) ? v("date") : d.toLocaleDateString(lang === "ar" ? "ar-SA" : lang === "ur" ? "ur-PK" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  add(label("date"), isNaN(d) ? v("date") : d.toLocaleDateString(lang === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : lang === "ur" ? "ur-PK-u-nu-latn" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
   if (v("notes")) add(label("notes"), v("notes"));
 }
 
@@ -477,7 +477,7 @@ $("form").addEventListener("submit", async e => {
   if (s.price != null) {
     const tt = totals();
     payload["السعر قبل الخصم"] = `${tt.before} ريال` + (tt.extras ? ` (السفرة ${tt.base} + زيادات ${tt.extras})` : "");
-    if (CONFIG.discount) payload["الخصم"] = `${CONFIG.discount}٪ (- ${Math.round((tt.before - tt.after) * 100) / 100} ريال)`;
+    if (CONFIG.discount) payload["الخصم"] = `${CONFIG.discount}% (- ${Math.round((tt.before - tt.after) * 100) / 100} ريال)`;
     payload["الإجمالي"] = `${tt.after} ريال`;
   }
   Object.assign(payload, {
