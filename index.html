@@ -266,7 +266,7 @@ const t = k => T[lang][k];
 const num = n => Number(n).toLocaleString("en-US");   // أرقام إنجليزية دائماً
 const sep = () => lang === "en" ? ", " : "، ";
 const disc = p => Math.round(p * (100 - CONFIG.discount)) / 100;   // السعر بعد الخصم
-const money = p => `${num(p)} ${t("currency")}`;
+const money = p => `${Number(p).toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 })} ${t("currency")}`;
 function totals(){
   const s = CONFIG.sufras[sufra];
   const extras = CONFIG.categories.reduce((a, c, ci) => a + [...picks[ci]].reduce((b, i) => b + (c.items[i].extra || 0), 0), 0);
