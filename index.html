@@ -67,6 +67,9 @@ h2{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0}
 .dish .ck{position:absolute;top:8px;inset-inline-end:8px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-fg);
   display:none;place-items:center;font-weight:700}
 .dish.on .ck{display:grid}
+.dish .minus{position:absolute;top:8px;inset-inline-start:8px;width:30px;height:30px;border-radius:50%;border:0;background:var(--surface);color:var(--accent);font:800 1.2rem/1 var(--body);box-shadow:0 1px 4px rgba(0,0,0,.18);display:none;place-items:center;cursor:pointer}
+.dish.on .minus{display:grid}
+.dish .ck{min-width:26px;width:auto;padding:0 7px;border-radius:999px;font-variant-numeric:tabular-nums}
 
 /* النموذج */
 form{display:flex;flex-direction:column;gap:14px}
@@ -212,7 +215,7 @@ const T = {
     pickSufra: "اختر السفرة المناسبة لعدد ضيوفك",
     serves: (a,b) => `تكفي ${a} - ${b} أشخاص`,
     rule: n => n === 1 ? "صنف واحد من كل فئة" : `${n} أصناف من كل فئة`,
-    pickRule: n => n === 1 ? "اختر صنف واحد من كل فئة" : `اختر ${n} أصناف من كل فئة`,
+    pickRule: n => n === 1 ? "اختر صنف واحد من كل فئة" : `اختر ${n} أصناف من كل فئة، وتقدر تكرر نفس الصنف`,
     of: (a,b) => `${a} من ${b}`, currency: "ريال",
     chooseSufra: "اختر سفرة", toItems: "اختيار الأصناف", next: "التالي",
     chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
@@ -230,7 +233,7 @@ const T = {
     pickSufra: "Choose the platter that fits your guests",
     serves: (a,b) => `Serves ${a} - ${b} people`,
     rule: n => n === 1 ? "1 item from each category" : `${n} items from each category`,
-    pickRule: n => n === 1 ? "Pick 1 item from each category" : `Pick ${n} items from each category`,
+    pickRule: n => n === 1 ? "Pick 1 item from each category" : `Pick ${n} items from each category (repeats allowed)`,
     of: (a,b) => `${a} of ${b}`, currency: "SAR",
     chooseSufra: "Choose a platter", toItems: "Choose items", next: "Next",
     chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
@@ -248,7 +251,7 @@ const T = {
     pickSufra: "اپنے مہمانوں کے مطابق دسترخوان منتخب کریں",
     serves: (a,b) => `${a} - ${b} افراد کے لیے`,
     rule: n => `ہر کیٹیگری سے ${n} ${n === 1 ? "آئٹم" : "آئٹمز"}`,
-    pickRule: n => `ہر کیٹیگری سے ${n} ${n === 1 ? "آئٹم" : "آئٹمز"} منتخب کریں`,
+    pickRule: n => `ہر کیٹیگری سے ${n} ${n === 1 ? "آئٹم" : "آئٹمز"} منتخب کریں` + (n === 1 ? "" : "، ایک آئٹم دوبارہ بھی چن سکتے ہیں"),
     of: (a,b) => `${b} میں سے ${a}`, currency: "ریال",
     chooseSufra: "دسترخوان منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
     chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
@@ -270,11 +273,12 @@ try { const s = localStorage.getItem("lang"); if (T[s]) lang = s; } catch {}
 const t = k => T[lang][k];
 const num = n => Number(n).toLocaleString("en-US");   // أرقام إنجليزية دائماً
 const sep = () => lang === "en" ? ", " : "، ";
+const r2 = n => Math.round(n * 100) / 100;
 const disc = p => Math.round(p * (100 - CONFIG.discount)) / 100;   // السعر بعد الخصم
 const money = p => `${Number(p).toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 })} ${t("currency")}`;
 function totals(){
   const s = CONFIG.sufras[sufra];
-  const extras = CONFIG.categories.reduce((a, c, ci) => a + [...picks[ci]].reduce((b, i) => b + (c.items[i].extra || 0), 0), 0);
+  const extras = CONFIG.categories.reduce((a, c, ci) => a + [...picks[ci]].reduce((b, [i, q]) => b + (c.items[i].extra || 0) * q, 0), 0);
   const before = (s.price || 0) + extras;
   return { base: s.price || 0, extras, before, after: disc(before) };
 }
@@ -282,8 +286,14 @@ let step = 1, sufra = null, catIdx = 0;
 let OFF = new Set();   // أسماء الأصناف الغير متوفرة (من شاشة الكاشير)
 const isOff = it => OFF.has(it.ar);
 // إذا الأصناف المتوفرة في الفئة أقل من المسموح، ينزل المطلوب لعددها
-const limFor = ci => Math.min(CONFIG.sufras[sufra].picks, CONFIG.categories[ci].items.filter(it => !isOff(it)).length);
-let picks = CONFIG.categories.map(() => new Set());
+const limFor = ci => CONFIG.categories[ci].items.some(it => !isOff(it)) ? CONFIG.sufras[sufra].picks : 0;
+// اختيارات العميل: لكل فئة Map (رقم الصنف ← العدد). يقدر يكرر نفس الصنف لين يكمل المسموح
+const newPicks = () => CONFIG.categories.map(() => new Map());
+let picks = newPicks();
+const cnt = m => [...m.values()].reduce((a, q) => a + q, 0);
+const trimPicks = (lim) => picks.map((m, ci) => { const out = new Map(); let room = lim;
+  for (const [ii, q] of m) { if (isOff(CONFIG.categories[ci].items[ii]) || room <= 0) continue; const k = Math.min(q, room); out.set(ii, k); room -= k; }
+  return out; });
 
 (() => { const d = new Date(); d.setDate(d.getDate() + CONFIG.minDaysAhead);
   $("date").min = d.toISOString().slice(0,10); })();
@@ -327,7 +337,7 @@ function renderSufras(){
       if (CONFIG.discount) { b.querySelector(".old").textContent = money(s.price); b.querySelector(".badge").textContent = t("off")(num(CONFIG.discount)); }
     }
     b.onclick = () => {
-      if (sufra !== i) picks = picks.map((set, ci) => new Set([...set].filter(ii => !isOff(CONFIG.categories[ci].items[ii])).slice(0, s.picks)));
+      if (sufra !== i) picks = trimPicks(s.picks);
       sufra = i; renderSufras(); updateBar();
     };
     box.appendChild(b);
@@ -342,28 +352,36 @@ function renderCats(){
   const box = $("cats"); box.innerHTML = "";
   CONFIG.categories.forEach((c, ci) => {
     if (ci !== catIdx) return;
-    const set = picks[ci], full = set.size >= lim;
+    const set = picks[ci], used = cnt(set), full = used >= lim;
     const sec = document.createElement("section"); sec.className = "cat";
     sec.innerHTML = `<div class="cat-h"><h2></h2><span class="pill${full ? " full" : ""}"></span></div><div class="dishes"></div>`;
     sec.querySelector("h2").textContent = c.name[lang];
-    sec.querySelector(".pill").textContent = t("of")(num(set.size), num(lim));
+    sec.querySelector(".pill").textContent = t("of")(num(used), num(lim));
     const grid = sec.querySelector(".dishes");
     c.items.forEach((it, ii) => {
-      const on = set.has(ii), na = isOff(it);
-      const d = document.createElement("button");
-      d.type = "button"; d.className = "dish" + (on ? " on" : "") + (na ? " na" : (!on && full ? " off" : ""));
-      if (na) d.disabled = true;
-      d.setAttribute("aria-pressed", on);
-      d.innerHTML = (it.img ? `<img class="img" alt="" loading="lazy">` : `<div class="img"></div>`) + `<span class="n"></span><span class="ck">✓</span>`;
+      const q = set.get(ii) || 0, on = q > 0, na = isOff(it);
+      const d = document.createElement("div");
+      d.className = "dish" + (on ? " on" : "") + (na ? " na" : (!on && full && lim !== 1 ? " off" : ""));
+      d.setAttribute("role", "button"); d.tabIndex = na ? -1 : 0;
+      d.setAttribute("aria-disabled", na);
+      d.innerHTML = (it.img ? `<img class="img" alt="" loading="lazy">` : `<div class="img"></div>`) + `<span class="n"></span><span class="ck"></span><button type="button" class="minus" aria-label="−">−</button>`;
+      d.querySelector(".ck").textContent = lim === 1 ? "✓" : "×" + num(q);
       if (it.img) { const im = d.querySelector("img"); im.onerror = () => { const f = document.createElement("div"); f.className = "img"; f.textContent = it[lang].trim()[0]; im.replaceWith(f); }; im.src = it.img; } else d.querySelector(".img").textContent = it[lang].trim()[0];
       d.querySelector(".n").textContent = it[lang];
       if (it.extra) { const ex = document.createElement("span"); ex.className = "ex"; ex.textContent = "+ " + money(disc(it.extra)); d.querySelector(".n").after(ex); }
       if (na) { const tg = document.createElement("span"); tg.className = "na-tag"; tg.textContent = t("soldOut"); d.appendChild(tg); }
-      d.onclick = () => {
-        if (set.has(ii)) set.delete(ii);
-        else if (set.size < lim) set.add(ii);
-        else if (lim === 1) { set.clear(); set.add(ii); }
+      const add = () => {
+        if (na) return;
+        if (lim === 1) { if (on) set.clear(); else { set.clear(); set.set(ii, 1); } }   // سفرة 1: الضغط يختار أو يبدّل
+        else if (used < lim) set.set(ii, q + 1);                                       // نفس الصنف يتكرر لين يكمل المسموح
         else return;
+        renderCats(); updateBar();
+      };
+      d.onclick = add;
+      d.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); add(); } };
+      d.querySelector(".minus").onclick = (e) => {
+        e.stopPropagation();
+        if (q <= 1) set.delete(ii); else set.set(ii, q - 1);
         renderCats(); updateBar();
       };
       grid.appendChild(d);
@@ -373,7 +391,7 @@ function renderCats(){
 }
 
 function catsDone(){
-  return picks.every((s, ci) => { const lim = limFor(ci); return lim === 0 || (CONFIG.requireFull ? s.size === lim : s.size >= 1); });
+  return picks.every((s, ci) => { const lim = limFor(ci); return lim === 0 || (CONFIG.requireFull ? cnt(s) === lim : cnt(s) >= 1); });
 }
 
 function updateBar(){
@@ -383,7 +401,7 @@ function updateBar(){
     if (sufra != null) { const b = document.createElement("b"); b.textContent = CONFIG.sufras[sufra].name[lang]; info.appendChild(b); }
     nx.textContent = t("toItems"); nx.disabled = sufra == null;
   } else if (step === 2) {
-    const lim = limFor(catIdx), n = picks[catIdx].size;
+    const lim = limFor(catIdx), n = cnt(picks[catIdx]);
     info.innerHTML = t("chosen")(num(n), num(lim));
     nx.textContent = t("next");
     nx.disabled = lim > 0 && (CONFIG.requireFull ? n !== lim : n < 1);
@@ -405,7 +423,7 @@ function go(n){
 // اختيارات العميل بلغة معيّنة
 function chosen(l){
   const n = l === "ar" ? x => x : num;
-  return CONFIG.categories.map((c, ci) => ({ cat: c.name[l], list: [...picks[ci]].map(i => c.items[i][l] + (c.items[i].extra ? ` (+${n(disc(c.items[i].extra))})` : "")) }));
+  return CONFIG.categories.map((c, ci) => ({ cat: c.name[l], list: [...picks[ci]].map(([i, q]) => c.items[i][l] + (q > 1 ? ` ×${n(q)}` : "") + (c.items[i].extra ? ` (+${n(r2(disc(c.items[i].extra) * q))})` : "")) }));
 }
 
 function renderSummary(target){
@@ -460,7 +478,7 @@ $("back2").onclick = () => {
   else go(1);
 };
 document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
-$("again").onclick = () => { sufra = null; catIdx = 0; picks = CONFIG.categories.map(() => new Set()); $("form").reset(); renderSufras(); go(1); };
+$("again").onclick = () => { sufra = null; catIdx = 0; picks = newPicks(); $("form").reset(); renderSufras(); go(1); };
 
 $("form").addEventListener("submit", async e => {
   e.preventDefault();
@@ -553,7 +571,7 @@ async function loadAvailability(){
     if (!data.ok || !Array.isArray(data.off)) return;
     sheetV2 = true;
     OFF = new Set(data.off);
-    picks = picks.map((set, ci) => new Set([...set].filter(ii => !isOff(CONFIG.categories[ci].items[ii]))));
+    picks = trimPicks(Infinity);
     if (step === 2) renderCats();
     updateBar();
   } catch {}
