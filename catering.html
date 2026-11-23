@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>كيترنق كرزة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Noto+Sans+Arabic:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: 3 steps (السفرة ← الأصناف ← البيانات), sticky action bar at bottom */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --fg:#2A1414; --muted:#7A6666;
+  --line:#EBDDDD; --accent:#801919; --accent-fg:#FFFFFF; --soft:#F8EEEE; --warn:#C0392B;
+  --display:"Tajawal","Noto Sans Arabic",Tahoma,sans-serif;
+  --body:"Tajawal","Noto Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:720px;margin:0 auto;padding-block:20px 140px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.steps{display:flex;gap:6px;flex:1}
+.steps span{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+.langs{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex-shrink:0}
+.langs button{background:none;border:0;border-radius:999px;padding:5px 12px;font:600 .85rem var(--body);color:var(--muted);cursor:pointer;white-space:nowrap}
+.langs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+header{display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
+h1{font-family:var(--display);font-weight:800;font-size:1.9rem;margin:0;line-height:1.25;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0}
+.sub{color:var(--muted);margin:0}
+
+/* السفر */
+.coupon{display:flex;align-items:center;gap:8px;width:fit-content;max-width:100%;margin:0 0 14px;padding:8px 14px;border:1.5px dashed var(--accent);border-radius:12px;background:var(--soft);color:var(--accent);font-weight:700}
+.sufras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sufra{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:18px;cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;text-align:start;font:inherit;color:inherit}
+.sufra.on{border-color:var(--accent);background:var(--soft)}
+.sufra .t{font-family:var(--display);font-weight:800;font-size:1.35rem;color:var(--accent)}
+.sufra .ppl{font-weight:700}
+.sufra .rule{color:var(--muted);font-size:.875rem}
+.sufra .pr{font-weight:800;font-size:1.15rem;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.old{color:var(--muted);font-weight:400;font-size:.85em;text-decoration:line-through}
+.badge{font-size:.75rem;font-weight:700;background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:1px 8px;align-self:flex-start}
+.dish .ex{padding:0 10px 10px;margin-top:-6px;font-size:.82rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.summary .row.total{border-top:1px solid var(--line);padding-top:8px;font-weight:800;font-size:1.1rem}
+.summary .row.total .k{color:var(--fg)}
+
+/* الأصناف */
+.cat{margin-top:26px}
+.cat-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.pill{font-size:.8rem;padding:2px 10px;border-radius:999px;background:var(--soft);color:var(--accent);font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill.full{background:var(--accent);color:var(--accent-fg)}
+.dishes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dish{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:0;overflow:hidden;cursor:pointer;
+  font:inherit;color:inherit;text-align:start;display:flex;flex-direction:column;position:relative}
+.dish.on{border-color:var(--accent)}
+.dish.off{opacity:.45}
+.dish.na{opacity:.5;cursor:not-allowed;filter:grayscale(1)}
+.dish .na-tag{position:absolute;top:8px;inset-inline-start:8px;background:var(--fg);color:#fff;font-size:.75rem;font-weight:700;border-radius:999px;padding:2px 8px}
+.dish .img{aspect-ratio:4/3;width:100%;max-width:100%;object-fit:cover;background:var(--soft);display:grid;place-items:center;
+  font-family:var(--display);font-weight:800;font-size:1.8rem;color:var(--accent)}
+.dish .n{padding:8px 10px 10px;font-weight:500;font-size:.95rem;line-height:1.4}
+.dish .ck{position:absolute;top:8px;inset-inline-end:8px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-fg);
+  display:none;place-items:center;font-weight:700}
+.dish.on .ck{display:grid}
+.dish .minus{position:absolute;top:8px;inset-inline-start:8px;width:30px;height:30px;border-radius:50%;border:0;background:var(--surface);color:var(--accent);font:800 1.2rem/1 var(--body);box-shadow:0 1px 4px rgba(0,0,0,.18);display:none;place-items:center;cursor:pointer}
+.dish.on .minus{display:grid}
+.dish .ck{min-width:26px;width:auto;padding:0 7px;border-radius:999px;font-variant-numeric:tabular-nums}
+
+/* الكيترنق: الإضافات + اختيارات المناسبة */
+.addons{display:flex;flex-direction:column;gap:8px}
+.addons h2{font-size:1.05rem}
+.addon{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:var(--surface);font-weight:500;flex-direction:row}
+.addon:has(input:checked){border-color:var(--accent);background:var(--soft)}
+.addon .l{display:flex;align-items:center;gap:10px;min-width:0}
+.addon input{accent-color:var(--accent);width:20px;height:20px;margin:0;flex-shrink:0}
+.addon .p{color:var(--accent);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.addon .p.q{color:var(--muted);font-weight:500;font-size:.85rem}
+.seg-opts.many{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+#otherType,#otherPlace{margin-top:8px}
+
+/* النموذج */
+form{display:flex;flex-direction:column;gap:14px}
+.seg{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.seg legend{font-weight:500;padding:0;margin-bottom:6px}
+.seg-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg-opts label{flex-direction:row;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;background:var(--surface)}
+.seg-opts label:has(input:checked){border-color:var(--accent);background:var(--soft);color:var(--accent);font-weight:700}
+.seg-opts input{accent-color:var(--accent);margin:0}
+#date{text-align:start}
+[dir="rtl"] #date{text-align:right}
+label{display:flex;flex-direction:column;gap:6px;font-weight:500;min-width:0}
+input,textarea{font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);width:100%}
+.summary{background:var(--soft);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.summary .row{display:flex;justify-content:space-between;gap:12px}
+.summary .k{color:var(--muted);flex-shrink:0}
+.summary .v{text-align:end;font-weight:500}
+.err{color:var(--warn);margin:0}
+.receipt{width:100%;text-align:start;margin-block:8px}
+.receipt h2{font-size:1.05rem;margin:0 0 4px}
+.receipt .sep{border-top:1px dashed var(--line);margin-block:4px}
+
+/* الشريط السفلي */
+.bar{position:fixed;inset:auto 0 0;background:var(--surface);border-top:1px solid var(--line);
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar-in{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar-info{font-size:.95rem;color:var(--muted);min-width:0}
+.bar-info b{color:var(--fg)}
+.btn{background:var(--accent);color:var(--accent-fg);border:0;border-radius:12px;padding:12px 22px;font:700 1rem var(--body);cursor:pointer;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.ghost{background:none;border:0;color:var(--muted);font:inherit;cursor:pointer;padding:6px 0;margin-bottom:6px}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.done{text-align:center;padding-block:60px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.done .num{font-family:var(--display);font-weight:800;font-size:2.4rem;color:var(--accent);font-variant-numeric:tabular-nums}
+
+@media (max-width:560px){.dishes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.sufras{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="steps" id="steps"><span></span><span></span><span></span></div>
+    <div class="langs" id="langs" role="group" aria-label="Language"><button type="button" data-l="ar">عربي</button><button type="button" data-l="en">English</button><button type="button" data-l="ur">اردو</button></div>
+  </div>
+
+  <!-- ١: اختيار السفرة -->
+  <section id="v1">
+    <header>
+      <h1 id="brand"></h1>
+      <p class="sub" data-t="pickSufra"></p>
+    </header>
+    <p class="coupon" id="couponBar" hidden></p>
+    <div class="sufras" id="sufras"></div>
+  </section>
+
+  <!-- ٢: اختيار الأصناف -->
+  <section id="v2" hidden>
+    <button class="ghost" type="button" id="back2"></button>
+    <header>
+      <h1 id="v2title"></h1>
+      <p class="sub" id="v2sub"></p>
+    </header>
+    <div id="cats"></div>
+  </section>
+
+  <!-- ٣: البيانات -->
+  <section id="v3" hidden>
+    <button class="ghost" type="button" data-go="2" data-t="editItems"></button>
+    <header><h1 data-t="details"></h1></header>
+    <form id="form" novalidate>
+      <div class="addons" id="addons"></div>
+      <fieldset class="seg">
+        <legend data-t="staff"></legend>
+        <div class="seg-opts">
+          <label for="st1"><input type="radio" name="staff" id="st1" value="men"><span data-t="men"></span></label>
+          <label for="st2"><input type="radio" name="staff" id="st2" value="women"><span data-t="women"></span></label>
+        </div>
+        <p class="sub" id="womenHint" style="font-size:.88rem"></p>
+      </fieldset>
+      <div class="summary" id="summary"></div>
+      <fieldset class="seg">
+        <legend data-t="eventType"></legend>
+        <div class="seg-opts many" id="types"></div>
+        <input id="otherType" maxlength="60" hidden>
+      </fieldset>
+      <fieldset class="seg">
+        <legend data-t="place"></legend>
+        <div class="seg-opts many" id="places"></div>
+        <input id="otherPlace" maxlength="60" hidden>
+      </fieldset>
+      <label for="name"><span data-t="name"></span><input id="name" required autocomplete="name"></label>
+      <label for="phone"><span data-t="phone"></span><input id="phone" required inputmode="tel" placeholder="05xxxxxxxx" autocomplete="tel" dir="ltr"></label>
+      <label for="district"><span data-t="district"></span><input id="district" required autocomplete="address-level3"></label>
+      <label for="naddr"><span data-t="naddr"></span><input id="naddr" maxlength="40" dir="ltr" placeholder="RRRD2929" autocomplete="off"></label>
+      <label for="maplink"><span data-t="maplink"></span><input id="maplink" type="url" inputmode="url" maxlength="500" dir="ltr" placeholder="https://maps.app.goo.gl/..."></label>
+      <fieldset class="seg">
+        <legend data-t="contact"></legend>
+        <div class="seg-opts">
+          <label for="c1"><input type="radio" name="contact" id="c1" value="call" checked><span data-t="call"></span></label>
+          <label for="c2"><input type="radio" name="contact" id="c2" value="wa"><span data-t="wa"></span></label>
+        </div>
+      </fieldset>
+      <label for="date"><span data-t="date"></span><input id="date" type="date" required dir="ltr"></label>
+      <label for="notes"><span data-t="notes"></span><textarea id="notes" rows="2"></textarea></label>
+      <p class="err" id="err" hidden></p>
+      <button class="btn" id="submit" type="submit" data-t="send"></button>
+    </form>
+  </section>
+
+  <!-- تم -->
+  <section id="v4" class="done" hidden>
+    <p class="sub" data-t="orderNo"></p>
+    <div class="num" id="orderNo"></div>
+    <h1 style="font-size:1.5rem" data-t="thanks"></h1>
+    <p class="sub" data-t="willCall"></p>
+    <div class="summary receipt" id="receipt"></div>
+    <button class="btn" id="again" type="button" data-t="newOrder"></button>
+  </section>
+</div>
+
+<div class="bar" id="bar">
+  <div class="bar-in">
+    <div class="bar-info" id="barInfo"></div>
+    <button class="btn" id="next" type="button" disabled></button>
+  </div>
+</div>
+
+<script src="menu.js"></script>
+<script>
+/* =========================================================
+   عدّل هنا فقط  (كل اسم له: عربي ar، إنجليزي en، أوردو ur)
+   ========================================================= */
+const CONFIG = {
+  email: "your@email.com",      // الإيميل اللي يوصله الطلب (اتركه your@email.com لو ما تبي إيميل)
+  sheetUrl: "https://script.google.com/macros/s/AKfycbyGimoaxSwpu1y9iFXEbNJ3DSILaqoTLYFRD0UN000ylV0mawavoM2142TqhYFZXB8/exec",                 // رابط Apps Script (Web app) عشان توصل الطلبات لشاشة الكاشير
+  brand: { ar: "كيترنق كرزة", en: "Karazah Catering", ur: "کرزہ کیٹرنگ" },
+  defaultLang: "ar",            // اللغة الافتراضية: ar أو en أو ur
+  requireFull: true,            // true = لازم يكمل العدد المسموح من كل فئة
+  minDaysAhead: 2,              // أقرب تاريخ مسموح للطلب (بالأيام)
+  discount: 0,                  // نسبة الخصم %
+  coupon: "",                   // كوبون الخصم، ينطبق تلقائياً ("" = بدون اسم كوبون) على السفرة والزيادات (0 = بدون خصم)
+
+  // picks = عدد الأصناف المسموحة من كل فئة، price = السعر قبل الخصم (null = ما يظهر)
+  // extra في الصنف = زيادة على سعر السفرة قبل الخصم
+  // الباقات حسب عدد الأشخاص (من ملف العرض). min = max = عدد الأشخاص
+  // picks = عدد الأصناف من كل فئة، price = السعر الثابت للباقة
+  // كل الباقات تشمل: العشاء في سخانات، السيت اب، طاقم الخدمة الرجالي، الشمبانية الحلال، وسبيكر للموسيقى
+  sufras: [
+    { name: { ar: "باقة شخصين", en: "2 People", ur: "2 افراد" },        min: 2, max: 2, picks: 1, price: 599 },
+    { name: { ar: "باقة ثلاثة أشخاص", en: "3 People", ur: "3 افراد" },  min: 3, max: 3, picks: 1, price: 749 },
+    { name: { ar: "باقة أربعة أشخاص", en: "4 People", ur: "4 افراد" },  min: 4, max: 4, picks: 1, price: 899 },
+    { name: { ar: "باقة خمسة أشخاص", en: "5 People", ur: "5 افراد" },   min: 5, max: 5, picks: 1, price: 1049 },
+    { name: { ar: "باقة ستة أشخاص", en: "6 People", ur: "6 افراد" },    min: 6, max: 6, picks: 1, price: 1199 },
+  ],
+
+  // إضافات اختيارية تنضاف على سعر الباقة (من ملف العرض)
+  addons: [
+    { ar: "باقة ورد على الطاولة", en: "Table flower bouquet", ur: "میز پر پھولوں کا گلدستہ", price: 150 },
+    { ar: "كيك مناسبة", en: "Occasion cake", ur: "تقریب کا کیک", price: 120 },
+    { ar: "ديكور عيد ميلاد", en: "Birthday decor", ur: "سالگرہ کی سجاوٹ", price: 200 },
+    { ar: "تجهيز ذكرى زواج", en: "Anniversary setup", ur: "شادی کی سالگرہ کا سیٹ اپ", price: 250 },
+    { ar: "شيف مع ستيشن مشاوي", en: "Chef with grill station", ur: "گرل اسٹیشن کے ساتھ شیف", price: 1500 },
+  ],
+  // طاقم الخدمة: الرجالي (ويترين ومشرف) مجاني ضمن الباقة، والبنات يتحسب لكل موظفة
+  womenStaff: { waitresses: 2, waitressPrice: 350, supervisors: 1, supervisorPrice: 500 },
+  eventTypes: [
+    { ar: "عيد ميلاد", en: "Birthday", ur: "سالگرہ" }, { ar: "ذكرى زواج", en: "Anniversary", ur: "شادی کی سالگرہ" },
+    { ar: "عشاء عائلي", en: "Family dinner", ur: "خاندانی عشائیہ" }, { ar: "عشاء عمل", en: "Business dinner", ur: "کاروباری عشائیہ" },
+    { ar: "أخرى", en: "Other", ur: "دیگر", other: true },
+  ],
+  places: [
+    { ar: "استراحة", en: "Rest house", ur: "ریسٹ ہاؤس" }, { ar: "بيت", en: "Home", ur: "گھر" },
+{ ar: "مكتب / شركة", en: "Office / Company", ur: "دفتر / کمپنی" },
+    { ar: "أخرى", en: "Other", ur: "دیگر", other: true },
+  ],
+
+  // الأصناف. img = رابط الصورة (صور قوقل درايف: https://drive.google.com/thumbnail?id=رقم_الملف&sz=w800 ، والملف لازم يكون مشارك للجميع)
+  categories: MENU_CATEGORIES   // الأصناف في ملف menu.js
+};
+/* ========================================================= */
+
+const T = {
+  ar: {
+    pickSufra: "ضيافة عشاء متكاملة لمناسبتك: العشاء في سخانات، سيت اب كامل، طاقم خدمة، شمبانية حلال، وسبيكر للموسيقى. الخدمة للعشاء فقط. اختر الباقة حسب عدد الأشخاص",
+    serves: (a,b) => a === "2" ? "لشخصين" : `لـ ${a} أشخاص`, perHead: n => `حوالي ${n} ريال للشخص`,
+    rule: n => n === 1 ? "صنف واحد من كل فئة" : `${n} أصناف من كل فئة`,
+    pickRule: n => n === 1 ? "اختر صنف واحد من كل فئة" : `اختر ${n} أصناف من كل فئة، وتقدر تكرر نفس الصنف`,
+    of: (a,b) => `${a} من ${b}`, currency: "ريال",
+    chooseSufra: "اختر باقة", toItems: "اختيار الأصناف", next: "التالي",
+    chosen: (a,b) => `اخترت <b>${a}</b> من ${b} أصناف`,
+    changeSufra: "→ تغيير الباقة", yourOrder: "تفاصيل طلبك", soldOut: "غير متوفر", prevCat: "→ الفئة السابقة", catStep: (a,b) => `الفئة ${a} من ${b}`, editItems: "→ تعديل الأصناف", details: "بيانات الطلب",
+    name: "الاسم", phone: "رقم الجوال", district: "اسم الحي", eDistrict: "اكتب اسم الحي.", naddr: "رقم العنوان الوطني (اختياري)", maplink: "رابط الموقع في قوقل ماب (اختياري)", eMap: "رابط الموقع لازم يبدأ بـ https://", date: "تاريخ المناسبة", contact: "طريقة التواصل المفضلة", call: "اتصال", wa: "واتساب",
+    address: "العنوان أو رابط الموقع", addressPh: "الحي، الشارع، أو رابط قوقل ماب",
+    notes: "ملاحظات (اختياري)", send: "أرسل الطلب", sending: "جاري الإرسال...",
+    sufra: "الباقة", price: "السعر", onConfirm: "السعر عند التأكيد", addons: "إضافات الكيترنق (اختياري)", addonsNone: "بدون إضافات", eventType: "نوع المناسبة", place: "مكان المناسبة", otherPh: "اكتب...", staff: "طاقم الخدمة", men: "رجال (مجاني ضمن الباقة)", women: "بنات", menShort: "رجال", womenShort: "بنات", womenCost: (w, s, c) => `ويتر بنت ×${w} + مشرفة ×${s} = ${c}`, staffCost: "طاقم البنات", eType: "اختر نوع المناسبة.", ePlace: "اختر مكان المناسبة.", eStaff: "اختر طاقم الخدمة (رجال أو نساء).", before: "السعر قبل الخصم", off: n => CONFIG.coupon ? `كوبون ${CONFIG.coupon} · خصم ${n}%` : `خصم ${n}%`, couponOn: c => `كوبون ${c} مطبّق تلقائياً`, total: "الإجمالي بعد الخصم",
+    orderNo: "رقم طلبك", thanks: "وصلنا طلبك، شكراً لك", willCall: "بنتواصل معك لتأكيد الطلب.", newOrder: "طلب جديد",
+    eNamePhone: "اكتب الاسم ورقم الجوال.", ePhone: "رقم الجوال غير صحيح، اكتبه مثل 05xxxxxxxx.",
+    eDate: "حدد تاريخ المناسبة.", eSoon: n => `التاريخ لازم يكون بعد ${n} يوم على الأقل من اليوم.`,
+    eAddr: "اكتب العنوان أو رابط الموقع.", eSend: "ما قدرنا نرسل الطلب. تأكد من الإنترنت وجرّب مرة ثانية."
+  },
+  en: {
+    pickSufra: "A complete dinner experience: dinner in chafing dishes, full setup, serving staff, halal sparkling drink and a music speaker. Dinner service only. Choose the package by number of people",
+    serves: (a,b) => `For ${a} people`, perHead: n => `About ${n} SAR per person`,
+    rule: n => n === 1 ? "1 item from each category" : `${n} items from each category`,
+    pickRule: n => n === 1 ? "Pick 1 item from each category" : `Pick ${n} items from each category (repeats allowed)`,
+    of: (a,b) => `${a} of ${b}`, currency: "SAR",
+    chooseSufra: "Choose a package", toItems: "Choose items", next: "Next",
+    chosen: (a,b) => `<b>${a}</b> of ${b} items selected`,
+    changeSufra: "← Change package", yourOrder: "Your order details", soldOut: "Unavailable", prevCat: "← Previous category", catStep: (a,b) => `Category ${a} of ${b}`, editItems: "← Edit items", details: "Order details",
+    name: "Name", phone: "Mobile number", district: "District", eDistrict: "Enter your district.", naddr: "National address short code (optional)", maplink: "Google Maps location link (optional)", eMap: "The location link must start with https://", date: "Event date", contact: "Preferred contact method", call: "Phone call", wa: "WhatsApp",
+    address: "Address or location link", addressPh: "District, street, or Google Maps link",
+    notes: "Notes (optional)", send: "Send order", sending: "Sending...",
+    sufra: "Package", price: "Price", onConfirm: "Price on confirmation", addons: "Catering add-ons (optional)", addonsNone: "No add-ons", eventType: "Event type", place: "Event venue", otherPh: "Type...", staff: "Serving staff", men: "Men (free, included)", women: "Women", menShort: "Men", womenShort: "Women", womenCost: (w, s, c) => `Waitress ×${w} + supervisor ×${s} = ${c}`, staffCost: "Women staff", eType: "Choose the event type.", ePlace: "Choose the event venue.", eStaff: "Choose the serving staff (men or women).", before: "Price before discount", off: n => CONFIG.coupon ? `Coupon ${CONFIG.coupon} · ${n}% off` : `${n}% off`, couponOn: c => `Coupon ${c} applied automatically`, total: "Total after discount",
+    orderNo: "Your order number", thanks: "We got your order, thank you", willCall: "We'll call you to confirm.", newOrder: "New order",
+    eNamePhone: "Enter your name and mobile number.", ePhone: "Invalid mobile number. Use a format like 05xxxxxxxx.",
+    eDate: "Choose the event date.", eSoon: n => `The date must be at least ${n} day(s) from today.`,
+    eAddr: "Enter your address or location link.", eSend: "We couldn't send your order. Check your connection and try again."
+  },
+  ur: {
+    pickSufra: "مکمل عشائیہ سروس: گرم برتنوں میں کھانا، مکمل سیٹ اپ، سروس اسٹاف، حلال مشروب اور میوزک اسپیکر۔ صرف رات کے کھانے کے لیے۔ افراد کی تعداد کے مطابق پیکج منتخب کریں",
+    serves: (a,b) => `${a} افراد کے لیے`, perHead: n => `تقریباً ${n} ریال فی فرد`,
+    rule: n => `ہر کیٹیگری سے ${n} ${n === 1 ? "آئٹم" : "آئٹمز"}`,
+    pickRule: n => `ہر کیٹیگری سے ${n} ${n === 1 ? "آئٹم" : "آئٹمز"} منتخب کریں` + (n === 1 ? "" : "، ایک آئٹم دوبارہ بھی چن سکتے ہیں"),
+    of: (a,b) => `${b} میں سے ${a}`, currency: "ریال",
+    chooseSufra: "پیکج منتخب کریں", toItems: "آئٹمز منتخب کریں", next: "اگلا",
+    chosen: (a,b) => `${b} میں سے <b>${a}</b> منتخب`,
+    changeSufra: "→ پیکج تبدیل کریں", yourOrder: "آپ کے آرڈر کی تفصیلات", soldOut: "دستیاب نہیں", prevCat: "→ پچھلی کیٹیگری", catStep: (a,b) => `${b} میں سے کیٹیگری ${a}`, editItems: "→ آئٹمز میں ترمیم", details: "آرڈر کی تفصیلات",
+    name: "نام", phone: "موبائل نمبر", district: "محلے کا نام", eDistrict: "اپنے محلے کا نام لکھیں۔", naddr: "قومی پتہ نمبر (اختیاری)", maplink: "گوگل میپس لوکیشن لنک (اختیاری)", eMap: "لوکیشن لنک https:// سے شروع ہونا چاہیے", date: "تقریب کی تاریخ", contact: "رابطے کا ترجیحی طریقہ", call: "کال", wa: "واٹس ایپ",
+    address: "پتہ یا لوکیشن لنک", addressPh: "محلہ، گلی، یا گوگل میپس لنک",
+    notes: "نوٹس (اختیاری)", send: "آرڈر بھیجیں", sending: "بھیجا جا رہا ہے...",
+    sufra: "پیکج", price: "قیمت", onConfirm: "قیمت تصدیق پر", addons: "کیٹرنگ اضافے (اختیاری)", addonsNone: "کوئی اضافہ نہیں", eventType: "تقریب کی قسم", place: "تقریب کی جگہ", otherPh: "لکھیں...", staff: "سروس اسٹاف", men: "مرد (پیکج میں مفت)", women: "خواتین", menShort: "مرد", womenShort: "خواتین", womenCost: (w, s, c) => `ویٹریس ×${w} + سپروائزر ×${s} = ${c}`, staffCost: "خواتین اسٹاف", eType: "تقریب کی قسم منتخب کریں۔", ePlace: "تقریب کی جگہ منتخب کریں۔", eStaff: "سروس اسٹاف منتخب کریں (مرد یا خواتین)۔", before: "رعایت سے پہلے قیمت", off: n => CONFIG.coupon ? `کوپن ${CONFIG.coupon} · ${n}% رعایت` : `${n}% رعایت`, couponOn: c => `کوپن ${c} خودبخود لاگو`, total: "رعایت کے بعد کل",
+    orderNo: "آپ کا آرڈر نمبر", thanks: "آپ کا آرڈر موصول ہو گیا، شکریہ", willCall: "تصدیق کے لیے ہم آپ سے رابطہ کریں گے۔", newOrder: "نیا آرڈر",
+    eNamePhone: "اپنا نام اور موبائل نمبر لکھیں۔", ePhone: "موبائل نمبر درست نہیں۔ 05xxxxxxxx کی طرح لکھیں۔",
+    eDate: "تقریب کی تاریخ منتخب کریں۔", eSoon: n => `تاریخ آج سے کم از کم ${n} دن بعد ہونی چاہیے۔`,
+    eAddr: "اپنا پتہ یا لوکیشن لنک لکھیں۔", eSend: "آرڈر نہیں بھیجا جا سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔"
+  }
+};
+
+const $ = id => document.getElementById(id);
+let lang = CONFIG.defaultLang;
+try { const s = localStorage.getItem("lang"); if (T[s]) lang = s; } catch {}
+const t = k => T[lang][k];
+const num = n => Number(n).toLocaleString("en-US");   // أرقام إنجليزية دائماً
+const sep = () => lang === "en" ? ", " : "، ";
+const r2 = n => Math.round(n * 100) / 100;
+const disc = p => Math.round(p * (100 - CONFIG.discount)) / 100;   // السعر بعد الخصم
+const money = p => `${Number(p).toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 })} ${t("currency")}`;
+function totals(){
+  const s = CONFIG.sufras[sufra];
+  const extras = CONFIG.categories.reduce((a, c, ci) => a + [...picks[ci]].reduce((b, [i, q]) => b + (c.items[i].extra || 0) * q, 0), 0);
+  const adds = CONFIG.addons.reduce((a, x, i) => a + (ADDS.has(i) ? (x.price || 0) : 0), 0);
+  const staff = staffCost();
+  const before = (s.price || 0) + extras + adds + staff;
+  return { base: s.price || 0, extras, adds, staff, before, after: disc(before) };
+}
+let step = 1, sufra = null, catIdx = 0;
+let ADDS = new Set();
+const isWomen = () => { const r = document.querySelector('input[name="staff"]:checked'); return !!r && r.value === "women"; };
+const WS = () => CONFIG.womenStaff;
+const staffCost = () => isWomen() ? WS().waitresses * WS().waitressPrice + WS().supervisors * WS().supervisorPrice : 0;   // الإضافات اللي اختارها العميل
+let OFF = new Set();   // أسماء الأصناف الغير متوفرة (من شاشة الكاشير)
+const isOff = it => OFF.has(it.ar);
+// إذا الأصناف المتوفرة في الفئة أقل من المسموح، ينزل المطلوب لعددها
+const limFor = ci => CONFIG.categories[ci].items.some(it => !isOff(it)) ? CONFIG.sufras[sufra].picks : 0;
+// اختيارات العميل: لكل فئة Map (رقم الصنف ← العدد). يقدر يكرر نفس الصنف لين يكمل المسموح
+const newPicks = () => CONFIG.categories.map(() => new Map());
+let picks = newPicks();
+const cnt = m => [...m.values()].reduce((a, q) => a + q, 0);
+const trimPicks = (lim) => picks.map((m, ci) => { const out = new Map(); let room = lim;
+  for (const [ii, q] of m) { if (isOff(CONFIG.categories[ci].items[ii]) || room <= 0) continue; const k = Math.min(q, room); out.set(ii, k); room -= k; }
+  return out; });
+
+(() => { const d = new Date(); d.setDate(d.getDate() + CONFIG.minDaysAhead);
+  $("date").min = d.toISOString().slice(0,10); })();
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "en" ? "ltr" : "rtl";
+  document.title = CONFIG.brand[lang];
+  $("brand").textContent = CONFIG.brand[lang];
+  document.querySelectorAll("#langs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === lang));
+  document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
+  const cb = $("couponBar"); cb.hidden = !(CONFIG.coupon && CONFIG.discount);
+  if (!cb.hidden) cb.textContent = `🎟️ ${t("couponOn")(CONFIG.coupon)} · ${CONFIG.discount}%`;
+  renderSufras();
+  if (step === 2) renderCats();
+  if (step === 3) renderSummary();
+  if (step === 4) renderReceipt();
+  renderAddons();
+  $("womenHint").textContent = t("womenCost")(num(WS().waitresses), num(WS().supervisors), money(WS().waitresses * WS().waitressPrice + WS().supervisors * WS().supervisorPrice));
+  document.querySelectorAll('input[name="staff"]').forEach(r => r.onchange = () => { if (step === 3) renderSummary(); });
+  renderChoices("types", CONFIG.eventTypes, "etype", "otherType");
+  renderChoices("places", CONFIG.places, "eplace", "otherPlace");
+  updateBar();
+}
+$("langs").onclick = e => {
+  const b = e.target.closest("button[data-l]"); if (!b || b.dataset.l === lang) return;
+  lang = b.dataset.l;
+  try { localStorage.setItem("lang", lang); } catch {}
+  $("err").hidden = true;
+  applyLang();
+};
+
+function renderSufras(){
+  const box = $("sufras"); box.innerHTML = "";
+  CONFIG.sufras.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "sufra" + (sufra === i ? " on" : "");
+    b.setAttribute("aria-pressed", sufra === i);
+    b.innerHTML = `<span class="t"></span><span class="ppl"></span><span class="rule"></span>` +
+      (s.price != null ? `<span class="pr"><span class="now"></span>${CONFIG.discount ? '<span class="old"></span><span class="badge"></span>' : ""}</span>` : `<span class="rule"></span>`);
+    b.querySelector(".t").textContent = s.name[lang];
+    b.querySelector(".ppl").textContent = t("serves")(num(s.min), num(s.max)) + (s.price ? " · " + t("perHead")(num(Math.round(disc(s.price) / s.min))) : "");
+    b.querySelectorAll(".rule")[0].textContent = t("rule")(s.picks === 1 ? 1 : num(s.picks));
+    if (s.price == null) b.querySelectorAll(".rule")[1].textContent = t("onConfirm");
+    if (s.price != null) {
+      b.querySelector(".now").textContent = money(disc(s.price));
+      if (CONFIG.discount) { b.querySelector(".old").textContent = money(s.price); b.querySelector(".badge").textContent = t("off")(num(CONFIG.discount)); }
+    }
+    b.onclick = () => {
+      if (sufra !== i) picks = trimPicks(s.picks);
+      sufra = i; renderSufras(); updateBar();
+    };
+    box.appendChild(b);
+  });
+}
+
+function renderCats(){
+  const s = CONFIG.sufras[sufra], lim = limFor(catIdx);
+  $("v2title").textContent = s.name[lang];
+  $("v2sub").textContent = `${t("catStep")(num(catIdx + 1), num(CONFIG.categories.length))} · ${t("pickRule")(lim === 1 ? 1 : num(lim))}`;
+  $("back2").textContent = catIdx > 0 ? t("prevCat") : t("changeSufra");
+  const box = $("cats"); box.innerHTML = "";
+  CONFIG.categories.forEach((c, ci) => {
+    if (ci !== catIdx) return;
+    const set = picks[ci], used = cnt(set), full = used >= lim;
+    const sec = document.createElement("section"); sec.className = "cat";
+    sec.innerHTML = `<div class="cat-h"><h2></h2><span class="pill${full ? " full" : ""}"></span></div><div class="dishes"></div>`;
+    sec.querySelector("h2").textContent = c.name[lang];
+    sec.querySelector(".pill").textContent = t("of")(num(used), num(lim));
+    const grid = sec.querySelector(".dishes");
+    c.items.forEach((it, ii) => {
+      const q = set.get(ii) || 0, on = q > 0, na = isOff(it);
+      const d = document.createElement("div");
+      d.className = "dish" + (on ? " on" : "") + (na ? " na" : (!on && full && lim !== 1 ? " off" : ""));
+      d.setAttribute("role", "button"); d.tabIndex = na ? -1 : 0;
+      d.setAttribute("aria-disabled", na);
+      d.innerHTML = (it.img ? `<img class="img" alt="" loading="lazy">` : `<div class="img"></div>`) + `<span class="n"></span><span class="ck"></span><button type="button" class="minus" aria-label="−">−</button>`;
+      d.querySelector(".ck").textContent = lim === 1 ? "✓" : "×" + num(q);
+      if (it.img) { const im = d.querySelector("img"); im.onerror = () => { const f = document.createElement("div"); f.className = "img"; f.textContent = it[lang].trim()[0]; im.replaceWith(f); }; im.src = it.img; } else d.querySelector(".img").textContent = it[lang].trim()[0];
+      d.querySelector(".n").textContent = it[lang];
+      if (it.extra) { const ex = document.createElement("span"); ex.className = "ex"; ex.textContent = "+ " + money(disc(it.extra)); d.querySelector(".n").after(ex); }
+      if (na) { const tg = document.createElement("span"); tg.className = "na-tag"; tg.textContent = t("soldOut"); d.appendChild(tg); }
+      const add = () => {
+        if (na) return;
+        if (lim === 1) { if (on) set.clear(); else { set.clear(); set.set(ii, 1); } }   // سفرة 1: الضغط يختار أو يبدّل
+        else if (used < lim) set.set(ii, q + 1);                                       // نفس الصنف يتكرر لين يكمل المسموح
+        else return;
+        renderCats(); updateBar();
+      };
+      d.onclick = add;
+      d.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); add(); } };
+      d.querySelector(".minus").onclick = (e) => {
+        e.stopPropagation();
+        if (q <= 1) set.delete(ii); else set.set(ii, q - 1);
+        renderCats(); updateBar();
+      };
+      grid.appendChild(d);
+    });
+    box.appendChild(sec);
+  });
+}
+
+function catsDone(){
+  return picks.every((s, ci) => { const lim = limFor(ci); return lim === 0 || (CONFIG.requireFull ? cnt(s) === lim : cnt(s) >= 1); });
+}
+
+function updateBar(){
+  const info = $("barInfo"), nx = $("next");
+  if (step === 1) {
+    info.textContent = sufra == null ? t("chooseSufra") : "";
+    if (sufra != null) { const b = document.createElement("b"); b.textContent = CONFIG.sufras[sufra].name[lang]; info.appendChild(b); }
+    nx.textContent = t("toItems"); nx.disabled = sufra == null;
+  } else if (step === 2) {
+    const lim = limFor(catIdx), n = cnt(picks[catIdx]);
+    info.innerHTML = t("chosen")(num(n), num(lim));
+    nx.textContent = t("next");
+    nx.disabled = lim > 0 && (CONFIG.requireFull ? n !== lim : n < 1);
+  }
+}
+
+function go(n){
+  step = n;
+  ["v1","v2","v3","v4"].forEach((v, i) => $(v).hidden = i + 1 !== n);
+  $("bar").hidden = n > 2;
+  [...$("steps").children].forEach((s, i) => s.classList.toggle("on", i < Math.min(n, 3)));
+  $("steps").style.visibility = n === 4 ? "hidden" : "visible";
+  if (n === 2) renderCats();
+  if (n === 3) renderSummary();
+  if (n === 4) renderReceipt();
+  updateBar(); window.scrollTo(0, 0);
+}
+
+// اختيارات العميل بلغة معيّنة
+function chosen(l){
+  const n = l === "ar" ? x => x : num;
+  return CONFIG.categories.map((c, ci) => ({ cat: c.name[l], list: [...picks[ci]].map(([i, q]) => c.items[i][l] + (q > 1 ? ` ×${n(q)}` : "") + (c.items[i].extra ? ` (+${n(r2(disc(c.items[i].extra) * q))})` : "")) }));
+}
+
+const addonNames = l => CONFIG.addons.filter((x, i) => ADDS.has(i)).map(x => x[l] + (x.price ? ` (+${l === "ar" ? disc(x.price) : num(disc(x.price))})` : ""));
+function renderAddons(){
+  const box = $("addons"); box.innerHTML = "";
+  if (!CONFIG.addons.length) return;
+  const h = document.createElement("h2"); h.textContent = t("addons"); box.appendChild(h);
+  CONFIG.addons.forEach((x, i) => {
+    const lb = document.createElement("label"); lb.className = "addon";
+    lb.innerHTML = `<span class="l"><input type="checkbox"><span class="n"></span></span><span class="p"></span>`;
+    const cb = lb.querySelector("input"); cb.checked = ADDS.has(i);
+    lb.querySelector(".n").textContent = x[lang];
+    const p = lb.querySelector(".p");
+    if (x.price) p.textContent = "+ " + money(disc(x.price)); else { p.textContent = t("onConfirm"); p.classList.add("q"); }
+    cb.onchange = () => { if (cb.checked) ADDS.add(i); else ADDS.delete(i); renderSummary(); };
+    box.appendChild(lb);
+  });
+}
+// خيارات نوع المناسبة ومكانها (مع "أخرى" يفتح خانة كتابة)
+function renderChoices(boxId, list, name, otherId){
+  const box = $(boxId); const cur = (document.querySelector(`input[name="${name}"]:checked`) || {}).value;
+  box.innerHTML = "";
+  list.forEach((x, i) => {
+    const id = name + i; const lb = document.createElement("label"); lb.htmlFor = id;
+    lb.innerHTML = `<input type="radio" name="${name}" id="${id}" value="${i}"><span></span>`;
+    lb.querySelector("span").textContent = x[lang];
+    const r = lb.querySelector("input"); r.checked = cur === String(i);
+    r.onchange = () => { $(otherId).hidden = !x.other; if (x.other) $(otherId).focus(); };
+    box.appendChild(lb);
+  });
+  $(otherId).placeholder = t("otherPh");
+}
+function pickedChoice(list, name, otherId, l){
+  const r = document.querySelector(`input[name="${name}"]:checked`); if (!r) return "";
+  const x = list[+r.value]; if (!x) return "";
+  return x.other ? (x[l] + (($(otherId).value || "").trim() ? ": " + $(otherId).value.trim() : "")) : x[l];
+}
+
+function renderSummary(target){
+  const s = CONFIG.sufras[sufra];
+  const box = target || $("summary"); box.innerHTML = "";
+  const add = (k, v) => { const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<span class="k"></span><span class="v"></span>`;
+    r.querySelector(".k").textContent = k; r.querySelector(".v").textContent = v; box.appendChild(r); };
+  add(t("sufra"), `${s.name[lang]} (${t("serves")(num(s.min), num(s.max))})`);
+  chosen(lang).forEach(x => add(x.cat, x.list.join(sep())));
+  if (isWomen()) add(t("staffCost"), "+ " + money(disc(staffCost())));
+  if (ADDS.size) add(t("addons").replace(/\s*\(.*\)\s*$/, ""), addonNames(lang).join(sep()));
+  if (s.price == null) { add(t("price"), t("onConfirm")); box.lastChild.classList.add("total"); }
+  else {
+    const tt = totals();
+    if (CONFIG.discount) {
+      add(t("before"), money(tt.before)); box.lastChild.querySelector(".v").className = "v old";
+      add(t("off")(num(CONFIG.discount)), "- " + money(Math.round((tt.before - tt.after) * 100) / 100));
+      add(t("total"), money(tt.after));
+    } else add(t("price"), money(tt.before));
+    box.lastChild.classList.add("total");
+  }
+  return add;
+}
+
+// شاشة التأكيد: الطلب + البيانات اللي كتبها العميل
+function renderReceipt(){
+  const box = $("receipt");
+  const h = document.createElement("h2"); h.textContent = t("yourOrder");
+  const add = renderSummary(box);
+  box.prepend(h);
+  const sepEl = document.createElement("div"); sepEl.className = "sep"; box.appendChild(sepEl);
+  const v = id => $(id).value.trim();
+  const label = k => t(k).replace(/\s*\(.*\)\s*$/, "");   // يشيل "(اختياري)"
+  add(label("name"), v("name"));
+  add(label("phone"), v("phone")); box.lastChild.querySelector(".v").dir = "ltr";
+  add(label("eventType"), pickedChoice(CONFIG.eventTypes, "etype", "otherType", lang));
+  add(label("place"), pickedChoice(CONFIG.places, "eplace", "otherPlace", lang));
+  const stf = document.querySelector('input[name="staff"]:checked'); add(label("staff"), stf ? t(stf.value + "Short") : "-");
+  add(label("district"), v("district"));
+  if (v("naddr")) { add(label("naddr"), v("naddr").toUpperCase()); box.lastChild.querySelector(".v").dir = "ltr"; }
+  if (v("maplink")) { add(label("maplink"), "✓"); }
+  const c = document.querySelector('input[name="contact"]:checked');
+  add(label("contact"), t(c && c.value === "wa" ? "wa" : "call"));
+  const d = new Date(v("date") + "T12:00:00");
+  add(label("date"), isNaN(d) ? v("date") : d.toLocaleDateString(lang === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : lang === "ur" ? "ur-PK-u-nu-latn" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  if (v("notes")) add(label("notes"), v("notes"));
+}
+
+$("next").onclick = () => {
+  if (step === 1) { catIdx = 0; go(2); return; }
+  if (step === 2 && catIdx < CONFIG.categories.length - 1) { catIdx++; renderCats(); updateBar(); window.scrollTo(0, 0); return; }
+  if (step === 2 && !catsDone()) return;
+  go(step + 1);
+};
+$("back2").onclick = () => {
+  if (catIdx > 0) { catIdx--; renderCats(); updateBar(); window.scrollTo(0, 0); }
+  else go(1);
+};
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
+$("again").onclick = () => { sufra = null; catIdx = 0; picks = newPicks(); ADDS = new Set(); $("form").reset(); $("otherType").hidden = true; $("otherPlace").hidden = true; renderSufras(); renderAddons(); go(1); };
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const v = id => $(id).value.trim();
+  const err = $("err"); err.hidden = true;
+  const fail = m => { err.textContent = m; err.hidden = false; };
+  if (!v("name") || !v("phone")) return fail(t("eNamePhone"));
+  if (!/^[0-9+\s]{9,15}$/.test(v("phone"))) return fail(t("ePhone"));
+  if (!document.querySelector('input[name="etype"]:checked')) return fail(t("eType"));
+  if (!document.querySelector('input[name="eplace"]:checked')) return fail(t("ePlace"));
+  if (!document.querySelector('input[name="staff"]:checked')) return fail(t("eStaff"));
+  if (!v("district")) return fail(t("eDistrict"));
+  if (v("maplink") && !/^https:\/\/\S+$/i.test(v("maplink"))) return fail(t("eMap"));
+  if (!v("date")) return fail(t("eDate"));
+  if (v("date") < $("date").min) return fail(t("eSoon")(CONFIG.minDaysAhead));
+
+  // الإيميل يوصلك بالعربي دائماً
+  const s = CONFIG.sufras[sufra];
+  const orderNo = String(Math.floor(100000 + Math.random() * 900000));
+  const payload = {
+    _subject: `طلب كيترنق جديد #${orderNo} - ${s.name.ar} - ${v("name")}`,
+    _template: "table", _captcha: "false",
+    "رقم الطلب": orderNo,
+    "الباقة": `${s.name.ar} (${s.min} أشخاص)`,
+    "نوع المناسبة": pickedChoice(CONFIG.eventTypes, "etype", "otherType", "ar"),
+    "مكان المناسبة": pickedChoice(CONFIG.places, "eplace", "otherPlace", "ar"),
+    "طاقم الخدمة": isWomen() ? `بنات (ويتر بنت ×${WS().waitresses} + مشرفة ×${WS().supervisors} = ${staffCost()} ريال)` : "رجال (ضمن الباقة)",
+  };
+  chosen("ar").forEach(x => payload[x.cat] = x.list.join("، "));
+  payload["الإضافات"] = addonNames("ar").join("، ") || "بدون";
+  if (s.price == null) payload["السعر"] = "عند التأكيد";
+  else {
+    const tt = totals();
+    payload["السعر قبل الخصم"] = `${tt.before} ريال` + ((tt.extras || tt.adds || tt.staff) ? ` (الباقة ${tt.base}` + (tt.extras ? ` + زيادات ${tt.extras}` : "") + (tt.adds ? ` + إضافات ${tt.adds}` : "") + (tt.staff ? ` + طاقم بنات ${tt.staff}` : "") + ")" : "");
+    if (CONFIG.discount) payload["الخصم"] = (CONFIG.coupon ? `كوبون ${CONFIG.coupon} ` : "") + `${CONFIG.discount}% (- ${Math.round((tt.before - tt.after) * 100) / 100} ريال)`;
+    payload["الإجمالي"] = `${tt.after} ريال`;
+  }
+  Object.assign(payload, {
+    "الاسم": v("name"), "الجوال": v("phone"), "الحي": v("district"),
+    "العنوان الوطني": v("naddr").toUpperCase() || "-", "رابط الموقع": v("maplink") || "-",
+    "طريقة التواصل": document.querySelector('input[name="contact"]:checked').value === "wa" ? "واتساب" : "اتصال",
+    "التاريخ": v("date"), "ملاحظات": v("notes") || "-",
+    "لغة العميل": { ar: "عربي", en: "English", ur: "أوردو" }[lang]
+  });
+
+  // نفس الطلب لشاشة الكاشير (Google Sheet)
+  const tt = s.price != null ? totals() : null;
+  const order = {
+    id: orderNo,
+    // "كيترنق" في أول اسم الباقة = شاشة الكاشير تعرف إنه طلب كيترنق
+    sufra: `كيترنق · ${s.name.ar} (${s.min} أشخاص)`,
+    items: [
+      `نوع المناسبة: ${payload["نوع المناسبة"]}`,
+      `مكان المناسبة: ${payload["مكان المناسبة"]}`,
+      `طاقم الخدمة: ${payload["طاقم الخدمة"]}`,
+      ...chosen("ar").map(x => `${x.cat}: ${x.list.join("، ")}`),
+      `الإضافات: ${payload["الإضافات"]}`
+    ].join("\n"),
+    total: tt ? `${tt.after} ريال` + (CONFIG.discount ? ` (قبل الخصم ${tt.before}` + (CONFIG.coupon ? `، كوبون ${CONFIG.coupon}` : "") + ")" : "") : "السعر عند التأكيد",
+    name: v("name"), phone: v("phone"), district: v("district"),
+    naddr: v("naddr").toUpperCase(), maplink: v("maplink"),
+    contact: payload["طريقة التواصل"], date: v("date"),
+    notes: sheetV2 ? v("notes") : ["📍 الحي: " + v("district"), v("notes")].filter(Boolean).join("\n"),
+    lang: payload["لغة العميل"]
+  };
+
+  const sendEmail = async () => {
+    const res = await fetch("https://formsubmit.co/ajax/" + CONFIG.email, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === "false" || data.success === false) throw new Error("email");
+  };
+  const sendSheet = async () => {
+    const res = await fetch(CONFIG.sheetUrl, { method: "POST", body: JSON.stringify({ order }) });  // text/plain بدون preflight
+    const data = await res.json();
+    if (!data.ok) throw new Error("sheet");
+  };
+
+  const jobs = [];
+  if (CONFIG.sheetUrl) jobs.push(sendSheet());
+  if (CONFIG.email && CONFIG.email !== "your@email.com") jobs.push(sendEmail());
+
+  const btn = $("submit"); btn.disabled = true; btn.textContent = t("sending");
+  try {
+    if (!jobs.length) throw new Error("no_target");
+    const results = await Promise.allSettled(jobs);
+    if (!results.some(x => x.status === "fulfilled")) throw new Error("all_failed");
+    $("orderNo").textContent = "#" + orderNo;
+    go(4);
+  } catch {
+    fail(t("eSend"));
+  } finally { btn.disabled = false; btn.textContent = t("send"); }
+});
+
+// يجيب الأصناف الغير متوفرة من الشيت
+let sheetV2 = false;   // true = كود الشيت الجديد (فيه عمود الحي)
+async function loadAvailability(){
+  if (!CONFIG.sheetUrl) return;
+  try {
+    const res = await fetch(CONFIG.sheetUrl + "?action=menu&t=" + Date.now());
+    const data = await res.json();
+    if (!data.ok || !Array.isArray(data.off)) return;
+    sheetV2 = true;
+    OFF = new Set(data.off);
+    picks = trimPicks(Infinity);
+    if (step === 2) renderCats();
+    updateBar();
+  } catch {}
+}
+
+applyLang(); go(1); loadAvailability();
+</script>
+</body>
+</html>
