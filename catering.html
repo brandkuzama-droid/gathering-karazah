@@ -397,7 +397,7 @@ function renderSufras(){
     b.innerHTML = `<span class="t"></span><span class="ppl"></span><span class="rule"></span>` +
       (s.price != null ? `<span class="pr"><span class="now"></span>${CONFIG.discount ? '<span class="old"></span><span class="badge"></span>' : ""}</span>` : `<span class="rule"></span>`);
     b.querySelector(".t").textContent = s.name[lang];
-    b.querySelector(".ppl").textContent = t("serves")(num(s.min), num(s.max)) + (s.price ? " · " + t("perHead")(num(Math.round(disc(s.price) / s.min))) : "");
+    b.querySelector(".ppl").textContent = t("serves")(num(s.min), num(s.max));
     b.querySelectorAll(".rule")[0].textContent = t("rule")(s.picks === 1 ? 1 : num(s.picks));
     if (s.price == null) b.querySelectorAll(".rule")[1].textContent = t("onConfirm");
     if (s.price != null) {
